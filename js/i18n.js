@@ -13,3 +13,4 @@ document.getElementById("content_submit_text").textContent = chrome.i18n.getMess
 
 document.getElementById("hideInput").placeholder = chrome.i18n.getMessage("placeHideInput");
 document.getElementById("showInput").placeholder = chrome.i18n.getMessage("placeShowInput");
+document.getElementById("quickSaveTagInput").placeholder = chrome.i18n.getMessage("placeQuickSaveTag");

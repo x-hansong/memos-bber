@@ -8,6 +8,7 @@ function get_info(callback) {
       apiTokens: '',
       hidetag: '',
       showtag: '',
+      quicksavetag: '',
       memo_lock: '',
       open_action: '',
       open_content: '',
@@ -27,6 +28,7 @@ function get_info(callback) {
       returnObject.apiTokens = items.apiTokens
       returnObject.hidetag = items.hidetag
       returnObject.showtag = items.showtag
+      returnObject.quicksavetag = items.quicksavetag
       returnObject.memo_lock = items.memo_lock
       returnObject.open_content = items.open_content
       returnObject.open_action = items.open_action
@@ -108,6 +110,18 @@ function requestMemosList(info, filter, onSuccess, onError) {
   })
 }
 
+function getMemoItems(data) {
+  var items = []
+  if (Array.isArray(data)) {
+    items = data
+  } else if (data && Array.isArray(data.memos)) {
+    items = data.memos
+  }
+  return items.filter(function(item) {
+    return item && typeof item === 'object'
+  })
+}
+
 get_info(function (info) {
   if (info.status) {
     //已经有绑定信息了，折叠
@@ -131,6 +145,7 @@ get_info(function (info) {
   $('#apiTokens').val(info.apiTokens)
   $('#hideInput').val(info.hidetag)
   $('#showInput').val(info.showtag)
+  $('#quickSaveTagInput').val(info.quicksavetag)
   if (info.open_action === 'upload_image') {
     //打开的时候就是上传图片
     uploadImage(info.open_content)
@@ -366,7 +381,9 @@ $('#tags').click(function () {
       var tagDom = "";
       requestMemosList(info, '?pageSize=1000', function (data) {
           // 提前并去重所有标签
-          const allTags = data.memos.flatMap(memo => memo.tags);
+          const allTags = getMemoItems(data).flatMap(function(memo) {
+            return memo.tags || []
+          });
           const uniTags = [...new Set(allTags)];
           $.each(uniTags, function (_, tag) {
             tagDom += '<span class="item-container">#' + tag + '</span>';
@@ -391,7 +408,8 @@ $('#saveTag').click(function () {
   chrome.storage.sync.set(
     {
       hidetag: $('#hideInput').val(),
-      showtag: $('#showInput').val()
+      showtag: $('#showInput').val(),
+      quicksavetag: $('#quickSaveTagInput').val()
     },
     function () {
       $.message({
@@ -424,7 +442,9 @@ $('#search').click(function () {
     var searchDom = ""
     if(pattern){
       requestMemosList(info, filter, function(data){
-          let searchData = data.memos
+          let searchData = getMemoItems(data).filter(function(memo) {
+            return memo.name
+          })
           if(searchData.length == 0){
             $.message({
               message: chrome.i18n.getMessage("searchNone")
@@ -432,7 +452,7 @@ $('#search').click(function () {
           }else{
             for(var i=0;i < searchData.length;i++){
               var memosID = searchData[i].name.split('/').pop();
-              searchDom += '<div class="random-item"><div class="random-time"><span id="random-link" data-uid="'+memosID+'"><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M864 640a32 32 0 0 1 64 0v224.096A63.936 63.936 0 0 1 864.096 928H159.904A63.936 63.936 0 0 1 96 864.096V159.904C96 124.608 124.64 96 159.904 96H384a32 32 0 0 1 0 64H192.064A31.904 31.904 0 0 0 160 192.064v639.872A31.904 31.904 0 0 0 192.064 864h639.872A31.904 31.904 0 0 0 864 831.936V640zm-485.184 52.48a31.84 31.84 0 0 1-45.12-.128 31.808 31.808 0 0 1-.128-45.12L815.04 166.048l-176.128.736a31.392 31.392 0 0 1-31.584-31.744 32.32 32.32 0 0 1 31.84-32l255.232-1.056a31.36 31.36 0 0 1 31.584 31.584L924.928 388.8a32.32 32.32 0 0 1-32 31.84 31.392 31.392 0 0 1-31.712-31.584l.736-179.392L378.816 692.48z" fill="#666" data-spm-anchor-id="a313x.7781069.0.i12" class="selected"/></svg></span><span id="random-delete" data-name="'+searchData[i].name+'" data-uid="'+memosID+'"><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M224 322.6h576c16.6 0 30-13.4 30-30s-13.4-30-30-30H224c-16.6 0-30 13.4-30 30 0 16.5 13.5 30 30 30zm66.1-144.2h443.8c16.6 0 30-13.4 30-30s-13.4-30-30-30H290.1c-16.6 0-30 13.4-30 30s13.4 30 30 30zm339.5 435.5H394.4c-16.6 0-30 13.4-30 30s13.4 30 30 30h235.2c16.6 0 30-13.4 30-30s-13.4-30-30-30z" fill="#666"/><path d="M850.3 403.9H173.7c-33 0-60 27-60 60v360c0 33 27 60 60 60h676.6c33 0 60-27 60-60v-360c0-33-27-60-60-60zm-.1 419.8l-.1.1H173.9l-.1-.1V464l.1-.1h676.2l.1.1v359.7z" fill="#666"/></svg></span>'+dayjs(searchData.createTime).fromNow()+'</div><div class="random-content">'+searchData[i].content.replace(/!\[.*?\]\((.*?)\)/g,' <img class="random-image" src="$1"/> ').replace(/\[(.*?)\]\((.*?)\)/g,' <a href="$2" target="_blank">$1</a> ')+'</div>'
+              searchDom += '<div class="random-item"><div class="random-time"><span id="random-link" data-uid="'+memosID+'"><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M864 640a32 32 0 0 1 64 0v224.096A63.936 63.936 0 0 1 864.096 928H159.904A63.936 63.936 0 0 1 96 864.096V159.904C96 124.608 124.64 96 159.904 96H384a32 32 0 0 1 0 64H192.064A31.904 31.904 0 0 0 160 192.064v639.872A31.904 31.904 0 0 0 192.064 864h639.872A31.904 31.904 0 0 0 864 831.936V640zm-485.184 52.48a31.84 31.84 0 0 1-45.12-.128 31.808 31.808 0 0 1-.128-45.12L815.04 166.048l-176.128.736a31.392 31.392 0 0 1-31.584-31.744 32.32 32.32 0 0 1 31.84-32l255.232-1.056a31.36 31.36 0 0 1 31.584 31.584L924.928 388.8a32.32 32.32 0 0 1-32 31.84 31.392 31.392 0 0 1-31.712-31.584l.736-179.392L378.816 692.48z" fill="#666" data-spm-anchor-id="a313x.7781069.0.i12" class="selected"/></svg></span><span id="random-delete" data-name="'+searchData[i].name+'" data-uid="'+memosID+'"><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M224 322.6h576c16.6 0 30-13.4 30-30s-13.4-30-30-30H224c-16.6 0-30 13.4-30 30 0 16.5 13.5 30 30 30zm66.1-144.2h443.8c16.6 0 30-13.4 30-30s-13.4-30-30-30H290.1c-16.6 0-30 13.4-30 30s13.4 30 30 30zm339.5 435.5H394.4c-16.6 0-30 13.4-30 30s13.4 30 30 30h235.2c16.6 0 30-13.4 30-30s-13.4-30-30-30z" fill="#666"/><path d="M850.3 403.9H173.7c-33 0-60 27-60 60v360c0 33 27 60 60 60h676.6c33 0 60-27 60-60v-360c0-33-27-60-60-60zm-.1 419.8l-.1.1H173.9l-.1-.1V464l.1-.1h676.2l.1.1v359.7z" fill="#666"/></svg></span>'+dayjs(searchData[i].createTime).fromNow()+'</div><div class="random-content">'+searchData[i].content.replace(/!\[.*?\]\((.*?)\)/g,' <img class="random-image" src="$1"/> ').replace(/\[(.*?)\]\((.*?)\)/g,' <a href="$2" target="_blank">$1</a> ')+'</div>'
               if(searchData[i].resources && searchData[i].resources.length > 0){
                 var resources = searchData[i].resources;
                 for(var j=0;j < resources.length;j++){
@@ -478,8 +498,17 @@ $('#random').click(function () {
     if (info.status) {
       $("#randomlist").html('').hide()
       requestMemosList(info, filter, function(data){
-          let randomNum = Math.floor(Math.random() * (data.memos.length));
-          var randomData = data.memos[randomNum]
+          var memos = getMemoItems(data).filter(function(memo) {
+            return memo.name
+          })
+          if(memos.length == 0){
+            $.message({
+              message: chrome.i18n.getMessage("searchNone")
+            })
+            return
+          }
+          let randomNum = Math.floor(Math.random() * (memos.length));
+          var randomData = memos[randomNum]
           randDom(randomData)
       })
     } else {
@@ -491,6 +520,12 @@ $('#random').click(function () {
 })
 
 function randDom(randomData){
+  if (!randomData || !randomData.name) {
+    $.message({
+      message: chrome.i18n.getMessage("searchNone")
+    })
+    return
+  }
   get_info(function (info) {
   var memosID = randomData.name.split('/').pop();
   var randomDom = '<div class="random-item"><div class="random-time"><span id="random-link" data-uid="'+memosID+'"><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M864 640a32 32 0 0 1 64 0v224.096A63.936 63.936 0 0 1 864.096 928H159.904A63.936 63.936 0 0 1 96 864.096V159.904C96 124.608 124.64 96 159.904 96H384a32 32 0 0 1 0 64H192.064A31.904 31.904 0 0 0 160 192.064v639.872A31.904 31.904 0 0 0 192.064 864h639.872A31.904 31.904 0 0 0 864 831.936V640zm-485.184 52.48a31.84 31.84 0 0 1-45.12-.128 31.808 31.808 0 0 1-.128-45.12L815.04 166.048l-176.128.736a31.392 31.392 0 0 1-31.584-31.744 32.32 32.32 0 0 1 31.84-32l255.232-1.056a31.36 31.36 0 0 1 31.584 31.584L924.928 388.8a32.32 32.32 0 0 1-32 31.84 31.392 31.392 0 0 1-31.712-31.584l.736-179.392L378.816 692.48z" fill="#666" data-spm-anchor-id="a313x.7781069.0.i12" class="selected"/></svg></span><span id="random-delete" data-uid="'+memosID+'" data-name="'+randomData.name+'"><svg class="icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M224 322.6h576c16.6 0 30-13.4 30-30s-13.4-30-30-30H224c-16.6 0-30 13.4-30 30 0 16.5 13.5 30 30 30zm66.1-144.2h443.8c16.6 0 30-13.4 30-30s-13.4-30-30-30H290.1c-16.6 0-30 13.4-30 30s13.4 30 30 30zm339.5 435.5H394.4c-16.6 0-30 13.4-30 30s13.4 30 30 30h235.2c16.6 0 30-13.4 30-30s-13.4-30-30-30z" fill="#666"/><path d="M850.3 403.9H173.7c-33 0-60 27-60 60v360c0 33 27 60 60 60h676.6c33 0 60-27 60-60v-360c0-33-27-60-60-60zm-.1 419.8l-.1.1H173.9l-.1-.1V464l.1-.1h676.2l.1.1v359.7z" fill="#666"/></svg></span>'+dayjs(randomData.createTime).fromNow()+'</div><div class="random-content">'+randomData.content.replace(/!\[.*?\]\((.*?)\)/g,' <img class="random-image" src="$1"/> ').replace(/\[(.*?)\]\((.*?)\)/g,' <a href="$2" target="_blank">$1</a> ')+'</div>'

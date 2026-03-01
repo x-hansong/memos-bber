@@ -47,6 +47,9 @@
    "placeShowInput":{
       "message": "默认“所有人可见”标签名"
    },
+   "placeQuickSaveTag":{
+      "message": "一键保存默认标签（如 tech 或 #tech）"
+   },
    "picDrag":{
       "message": "拖拽到窗口上传该图片"
    },
@@ -91,6 +94,18 @@
    },
    "memoFailed":{
       "message": "发送失败 😭"
+   },
+   "quickSaveBtn":{
+      "message": "存到 Memos"
+   },
+   "quickSaveSuccess":{
+      "message": "已保存到 Memos"
+   },
+   "quickSaveFailed":{
+      "message": "保存失败"
+   },
+   "quickSaveNeedSetup":{
+      "message": "请先配置 Memos 地址和 Access Token"
    },
    "invalidToken":{
       "message": "无效的 token 或 url 😭"

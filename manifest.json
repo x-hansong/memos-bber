@@ -17,7 +17,19 @@
    },
    "background": {
       "service_worker": "js/background.js"
-    },
+   },
+   "content_scripts": [
+      {
+         "matches": [
+            "http://*/*",
+            "https://*/*"
+         ],
+         "js": [
+            "js/content-script.js"
+         ],
+         "run_at": "document_idle"
+      }
+   ],
    "permissions": [
       "tabs",
       "storage",

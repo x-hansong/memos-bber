@@ -45,3 +45,103 @@ chrome.contextMenus.onClicked.addListener(info => {
       }
     })
 })
+
+function joinApiUrl(baseUrl, path) {
+    return baseUrl.replace(/\/?$/, '/') + path.replace(/^\//, '')
+}
+
+function buildMemoContent(content, pageUrl) {
+    var sourceLine = pageUrl || ''
+    if (!sourceLine) {
+      return content
+    }
+    if (!content) {
+      return sourceLine
+    }
+    return content + '\n\n' + sourceLine
+}
+
+function normalizeQuickSaveTag(tagText) {
+    var rawTag = (tagText || '').trim()
+    if (!rawTag) {
+      return ''
+    }
+
+    return rawTag
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(function(tag) {
+        return tag.charAt(0) === '#' ? tag : '#' + tag
+      })
+      .join(' ')
+}
+
+function buildQuickSaveContent(content, pageUrl, quickSaveTag) {
+    var sections = []
+    var body = buildMemoContent(content, pageUrl)
+    var tagLine = normalizeQuickSaveTag(quickSaveTag)
+
+    if (body) {
+      sections.push(body)
+    }
+    if (tagLine) {
+      sections.push(tagLine)
+    }
+
+    return sections.join('\n\n')
+}
+
+function sendQuickMemo(payload, sendResponse) {
+    var memoContent = ((payload && payload.content) || '').trim()
+    var pageUrl = (payload && payload.pageUrl) || ''
+
+    if (!memoContent && !pageUrl) {
+      sendResponse({ ok: false, reason: 'empty-content' })
+      return
+    }
+
+    chrome.storage.sync.get(
+      {
+        apiUrl: '',
+        apiTokens: '',
+        quicksavetag: '',
+        memo_lock: ''
+      },
+      function(items) {
+        if (!items.apiUrl || !items.apiTokens) {
+          sendResponse({ ok: false, reason: 'missing-config' })
+          return
+        }
+
+        fetch(joinApiUrl(items.apiUrl, 'api/v1/memos'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + items.apiTokens
+          },
+          body: JSON.stringify({
+            content: buildQuickSaveContent(memoContent, pageUrl, items.quicksavetag),
+            visibility: items.memo_lock || ''
+          })
+        }).then(function(response) {
+          if (!response.ok) {
+            throw new Error('Request failed')
+          }
+          return response.json()
+        }).then(function() {
+          sendResponse({ ok: true })
+        }).catch(function() {
+          sendResponse({ ok: false, reason: 'request-failed' })
+        })
+      }
+    )
+}
+
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    if (!message || message.type !== 'quick-save-selection') {
+      return
+    }
+
+    sendQuickMemo(message.payload || {}, sendResponse)
+    return true
+})

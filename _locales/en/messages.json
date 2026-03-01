@@ -47,6 +47,9 @@
    "placeShowInput":{
       "message": "Default 'Everyone can see' Tag name"
    },
+   "placeQuickSaveTag":{
+      "message": "Quick save default tag (for example: tech or #tech)"
+   },
    "picDrag":{
       "message": "Drag upload the image"
    },
@@ -91,6 +94,18 @@
    },
    "memoFailed":{
       "message": "Failed! 😭"
+   },
+   "quickSaveBtn":{
+      "message": "Save to Memos"
+   },
+   "quickSaveSuccess":{
+      "message": "Saved to Memos"
+   },
+   "quickSaveFailed":{
+      "message": "Save failed"
+   },
+   "quickSaveNeedSetup":{
+      "message": "Configure the Memos URL and access token first"
    },
    "invalidToken":{
       "message": "Invalid token or url 😭"
