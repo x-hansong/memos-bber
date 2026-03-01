@@ -17,7 +17,7 @@ function get_info(callback) {
     function (items) {
       var flag = false
       var returnObject = {}
-      if (items.apiUrl === '' || items.repo === '') {
+      if (items.apiUrl === '' || items.apiTokens === '') {
         flag = false
       } else {
         flag = true
@@ -36,6 +36,76 @@ function get_info(callback) {
       if (callback) callback(returnObject)
     }
   )
+}
+
+function parseJwtPayload(token) {
+  try {
+    var parts = token.split('.')
+    if (parts.length < 2) {
+      return null
+    }
+    var base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    var padding = base64.length % 4
+    if (padding) {
+      base64 += '='.repeat(4 - padding)
+    }
+    return JSON.parse(atob(base64))
+  } catch (error) {
+    return null
+  }
+}
+
+function saveApiConfig(apiUrl, apiTokens, userid) {
+  chrome.storage.sync.set(
+    {
+      apiUrl: apiUrl,
+      apiTokens: apiTokens,
+      userid: userid
+    },
+    function () {
+      $.message({
+        message: chrome.i18n.getMessage("saveSuccess")
+      });
+      $('#blog_info').hide();
+    }
+  );
+}
+
+function getLegacyMemosUrl(info, filter) {
+  var parent = 'users/' + info.userid;
+  return info.apiUrl + 'api/v1/' + parent + '/memos' + (filter || '');
+}
+
+function getUniversalMemosUrl(info, filter) {
+  return info.apiUrl + 'api/v1/memos' + (filter || '');
+}
+
+function requestMemosList(info, filter, onSuccess, onError) {
+  $.ajax({
+    url: getLegacyMemosUrl(info, filter),
+    type: "GET",
+    contentType: "application/json",
+    dataType: "json",
+    headers : {'Authorization':'Bearer ' + info.apiTokens},
+    success: onSuccess,
+    error: function (xhr) {
+      if (xhr && xhr.status === 404) {
+        $.ajax({
+          url: getUniversalMemosUrl(info, filter),
+          type: "GET",
+          contentType: "application/json",
+          dataType: "json",
+          headers : {'Authorization':'Bearer ' + info.apiTokens},
+          success: onSuccess,
+          error: onError
+        })
+        return
+      }
+      if (onError) {
+        onError(xhr)
+      }
+    }
+  })
 }
 
 get_info(function (info) {
@@ -259,27 +329,23 @@ $('#saveKey').click(function () {
     if (response && response.name) {
       // 如果响应包含用户name "users/{id}"，存储 apiUrl 和 apiTokens
       var userid = parseInt(response.name.split('/').pop(), 10)
-      chrome.storage.sync.set(
-        {
-          apiUrl: apiUrl,
-          apiTokens: apiTokens,
-          userid: userid
-        },
-        function () {
-          $.message({
-            message: chrome.i18n.getMessage("saveSuccess")
-          });
-          $('#blog_info').hide();
-        }
-      );
+      saveApiConfig(apiUrl, apiTokens, userid);
     } else {
       // 如果响应不包含用户 ID，显示错误消息
       $.message({
         message: chrome.i18n.getMessage("invalidToken")
       });
     }
-  }).fail(function () {
-    // 请求失败时显示错误消息
+  }).fail(function (xhr) {
+    // 新版实例可能移除了 auth/status，退回到本地解析 JWT 的 sub 作为 user id
+    if (xhr && xhr.status === 404) {
+      var payload = parseJwtPayload(apiTokens)
+      var userid = payload && payload.sub ? parseInt(payload.sub, 10) : NaN
+      if (!Number.isNaN(userid)) {
+        saveApiConfig(apiUrl, apiTokens, userid);
+        return
+      }
+    }
     $.message({
       message: chrome.i18n.getMessage("invalidToken")
     });
@@ -296,17 +362,9 @@ $('#opensite').click(function () {
 $('#tags').click(function () {
   get_info(function (info) {
     if (info.apiUrl) {
-      var parent = `users/${info.userid}`;
       // 从最近的1000条memo中获取tags,因此不保证获取能全部的
-      var tagUrl = info.apiUrl + 'api/v1/' + parent + '/memos?pageSize=1000';
       var tagDom = "";
-      $.ajax({
-        url: tagUrl,
-        type: "GET",
-        contentType: "application/json",
-        dataType: "json",
-        headers: { 'Authorization': 'Bearer ' + info.apiTokens },
-        success: function (data) {
+      requestMemosList(info, '?pageSize=1000', function (data) {
           // 提前并去重所有标签
           const allTags = data.memos.flatMap(memo => memo.tags);
           const uniTags = [...new Set(allTags)];
@@ -315,7 +373,6 @@ $('#tags').click(function () {
           });
           tagDom += '<svg id="hideTag" class="hidetag" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M78.807 362.435c201.539 314.275 666.962 314.188 868.398-.241 16.056-24.99 13.143-54.241-4.04-62.54-17.244-8.377-40.504 3.854-54.077 24.887-174.484 272.338-577.633 272.41-752.19.195-13.573-21.043-36.874-33.213-54.113-24.837-17.177 8.294-20.06 37.545-3.978 62.536z" fill="#fff"/><path d="M894.72 612.67L787.978 494.386l38.554-34.785 106.742 118.251-38.554 34.816zM635.505 727.51l-49.04-147.123 49.255-16.41 49.054 147.098-49.27 16.435zm-236.18-12.001l-49.568-15.488 43.29-138.48 49.557 15.513-43.28 138.455zM154.49 601.006l-38.743-34.565 95.186-106.732 38.763 34.566-95.206 106.731z" fill="#fff"/></svg>'
           $("#taglist").html(tagDom).slideToggle(500)
-        }
       })
     } else {
       $.message({
@@ -361,19 +418,12 @@ $(document).on("click",".item-lock",function () {
 $('#search').click(function () {
   get_info(function (info) {
   const pattern = $("textarea[name=text]").val()
-  var parent = `users/${info.userid}`;
   var filter = "?filter=" + encodeURIComponent(`visibility in ["PUBLIC","PROTECTED"] && content.contains("${pattern}")`);
   if (info.status) {
     $("#randomlist").html('').hide()
     var searchDom = ""
     if(pattern){
-      $.ajax({
-        url:info.apiUrl+"api/v1/"+parent+"/memos"+filter,
-        type:"GET",
-        contentType:"application/json",
-        dataType:"json",
-        headers : {'Authorization':'Bearer ' + info.apiTokens},
-        success: function(data){
+      requestMemosList(info, filter, function(data){
           let searchData = data.memos
           if(searchData.length == 0){
             $.message({
@@ -408,7 +458,6 @@ $('#search').click(function () {
             window.ViewImage && ViewImage.init('.random-image')
             $("#randomlist").html(searchDom).slideDown(500);
           }
-        }
       });
     }else{
       $.message({
@@ -425,22 +474,13 @@ $('#search').click(function () {
 
 $('#random').click(function () {
   get_info(function (info) {
-    var parent = `users/${info.userid}`;
     var filter = "?filter=" + encodeURIComponent(`visibility in ["PUBLIC","PROTECTED"]`);
     if (info.status) {
       $("#randomlist").html('').hide()
-      var randomUrl = info.apiUrl + "api/v1/" +parent + "/memos" + filter;
-      $.ajax({
-        url:randomUrl,
-        type:"GET",
-        contentType:"application/json",
-        dataType:"json",
-        headers : {'Authorization':'Bearer ' + info.apiTokens},
-        success: function(data){
+      requestMemosList(info, filter, function(data){
           let randomNum = Math.floor(Math.random() * (data.memos.length));
           var randomData = data.memos[randomNum]
           randDom(randomData)
-        }
       })
     } else {
       $.message({
