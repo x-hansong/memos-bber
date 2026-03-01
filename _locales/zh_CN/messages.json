@@ -20,6 +20,45 @@
    "saveBtn":{
       "message": "保存"
    },
+   "settingsTitle":{
+      "message": "设置"
+   },
+   "settingsMemosSection":{
+      "message": "Memos 连接"
+   },
+   "settingsTagsSection":{
+      "message": "标签默认值"
+   },
+   "settingsAutoTagSection":{
+      "message": "自动打标签"
+   },
+   "settingsTransferSection":{
+      "message": "配置导入导出"
+   },
+   "settingsTransferHelp":{
+      "message": "导出会下载当前设置为 JSON 文件；导入会用 JSON 文件中的配置覆盖当前设置。"
+   },
+   "exportSettingsBtn":{
+      "message": "导出配置"
+   },
+   "importSettingsBtn":{
+      "message": "导入配置"
+   },
+   "apiUrlLabel":{
+      "message": "Memos 地址"
+   },
+   "apiTokensLabel":{
+      "message": "Memos Access Token"
+   },
+   "hideInputLabel":{
+      "message": "仅自己可见标签"
+   },
+   "showInputLabel":{
+      "message": "所有人可见标签"
+   },
+   "quickSaveTagLabel":{
+      "message": "一键保存默认标签"
+   },
    "placeApiUrl":{
       "message": "请填入 Memos 主页网址"
    },
@@ -47,6 +86,51 @@
    "placeShowInput":{
       "message": "默认“所有人可见”标签名"
    },
+   "placeQuickSaveTag":{
+      "message": "一键保存默认标签（如 tech 或 #tech）"
+   },
+   "autoTagEnabledLabel":{
+      "message": "保存前自动选标签"
+   },
+   "autoTagEnabledHelp":{
+      "message": "开启后会在保存到 Memos 前调用模型，从候选标签里挑选一个最合适的标签。"
+   },
+   "autoTagCandidatesLabel":{
+      "message": "候选标签范围"
+   },
+   "placeAutoTagCandidates":{
+      "message": "候选标签范围（空格或逗号分隔，如 tech, work）"
+   },
+   "autoTagApiUrlLabel":{
+      "message": "模型接口地址"
+   },
+   "placeAutoTagApiUrl":{
+      "message": "模型接口地址（支持 OpenAI 兼容 chat completions）"
+   },
+   "autoTagApiKeyLabel":{
+      "message": "模型 API Key"
+   },
+   "placeAutoTagApiKey":{
+      "message": "模型 API Key"
+   },
+   "autoTagModelLabel":{
+      "message": "模型名称"
+   },
+   "placeAutoTagModel":{
+      "message": "模型名称（如 gpt-4o-mini）"
+   },
+   "autoTagSystemPromptLabel":{
+      "message": "System Prompt"
+   },
+   "placeAutoTagSystemPrompt":{
+      "message": "自动打标签 system prompt（支持 {{candidate_tags}} {{content}}）"
+   },
+   "autoTagUserPromptLabel":{
+      "message": "User Prompt"
+   },
+   "placeAutoTagUserPrompt":{
+      "message": "自动打标签 user prompt（支持 {{candidate_tags}} {{content}} {{extra_context}}）"
+   },
    "picDrag":{
       "message": "拖拽到窗口上传该图片"
    },
@@ -67,6 +151,12 @@
    },
    "saveSuccess":{
       "message": "保存信息成功"
+   },
+   "importSuccess":{
+      "message": "导入配置成功"
+   },
+   "importFailed":{
+      "message": "导入配置失败"
    },
    "searchNow":{
       "message": "想搜点啥？"
@@ -91,6 +181,18 @@
    },
    "memoFailed":{
       "message": "发送失败 😭"
+   },
+   "quickSaveBtn":{
+      "message": "存到 Memos"
+   },
+   "quickSaveSuccess":{
+      "message": "已保存到 Memos"
+   },
+   "quickSaveFailed":{
+      "message": "保存失败"
+   },
+   "quickSaveNeedSetup":{
+      "message": "请先配置 Memos 地址和 Access Token"
    },
    "invalidToken":{
       "message": "无效的 token 或 url 😭"

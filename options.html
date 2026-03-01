@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>MEMOS Settings</title>
+    <link rel="stylesheet" href="./css/main.css" />
+  </head>
+  <body class="body options-body">
+    <div class="title" id="settingsTitle"></div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" id="settingsMemosSection"></div>
+      <div class="memo-editor settings-stack">
+        <div class="setting-field">
+          <label class="setting-label" for="apiUrl" id="apiUrlLabel"></label>
+          <input
+            id="apiUrl"
+            class="inputer"
+            name="apiUrl"
+            type="text"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="apiUrlHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="apiTokens" id="apiTokensLabel"></label>
+          <input
+            id="apiTokens"
+            class="inputer"
+            name="apiTokens"
+            type="text"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="apiTokensHelp"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" id="settingsTagsSection"></div>
+      <div class="memo-editor settings-stack">
+        <div class="setting-field">
+          <label class="setting-label" for="hideInput" id="hideInputLabel"></label>
+          <input
+            id="hideInput"
+            class="inputer"
+            name="hideInput"
+            type="text"
+            value=""
+            maxlength="50"
+          />
+          <div class="setting-help" id="hideInputHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="showInput" id="showInputLabel"></label>
+          <input
+            id="showInput"
+            class="inputer"
+            name="showInput"
+            type="text"
+            value=""
+            maxlength="50"
+          />
+          <div class="setting-help" id="showInputHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="quickSaveTagInput" id="quickSaveTagLabel"></label>
+          <input
+            id="quickSaveTagInput"
+            class="inputer"
+            name="quickSaveTagInput"
+            type="text"
+            value=""
+            maxlength="100"
+          />
+          <div class="setting-help" id="quickSaveTagHelp"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" id="settingsAutoTagSection"></div>
+      <div class="memo-editor settings-stack">
+        <div class="setting-field">
+          <div class="setting-checkbox-row">
+            <label class="setting-label" for="autoTagEnabled" id="autoTagEnabledLabel"></label>
+            <input
+              id="autoTagEnabled"
+              name="autoTagEnabled"
+              type="checkbox"
+            />
+          </div>
+          <div class="setting-help" id="autoTagEnabledHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="autoTagCandidatesInput" id="autoTagCandidatesLabel"></label>
+          <input
+            id="autoTagCandidatesInput"
+            class="inputer"
+            name="autoTagCandidatesInput"
+            type="text"
+            value=""
+            maxlength="200"
+          />
+          <div class="setting-help" id="autoTagCandidatesHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="autoTagApiUrlInput" id="autoTagApiUrlLabel"></label>
+          <input
+            id="autoTagApiUrlInput"
+            class="inputer"
+            name="autoTagApiUrlInput"
+            type="text"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="autoTagApiUrlHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="autoTagApiKeyInput" id="autoTagApiKeyLabel"></label>
+          <input
+            id="autoTagApiKeyInput"
+            class="inputer"
+            name="autoTagApiKeyInput"
+            type="text"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="autoTagApiKeyHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="autoTagModelInput" id="autoTagModelLabel"></label>
+          <input
+            id="autoTagModelInput"
+            class="inputer"
+            name="autoTagModelInput"
+            type="text"
+            value=""
+            maxlength="100"
+          />
+          <div class="setting-help" id="autoTagModelHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="autoTagSystemPromptInput" id="autoTagSystemPromptLabel"></label>
+          <textarea
+            id="autoTagSystemPromptInput"
+            class="common-editor-inputer prompt-config-input"
+            rows="6"
+            name="autoTagSystemPromptInput"
+          ></textarea>
+          <div class="setting-help" id="autoTagSystemPromptHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="autoTagUserPromptInput" id="autoTagUserPromptLabel"></label>
+          <textarea
+            id="autoTagUserPromptInput"
+            class="common-editor-inputer prompt-config-input"
+            rows="6"
+            name="autoTagUserPromptInput"
+          ></textarea>
+          <div class="setting-help" id="autoTagUserPromptHelp"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title" id="settingsTransferSection"></div>
+      <div class="memo-editor settings-stack">
+        <div class="setting-field">
+          <div class="setting-actions-row">
+            <span id="exportSettings" class="action-btn confirm-btn"></span>
+            <span id="importSettings" class="action-btn confirm-btn secondary-btn"></span>
+          </div>
+          <div class="setting-help" id="settingsTransferHelp"></div>
+          <input
+            id="importSettingsFile"
+            type="file"
+            accept="application/json,.json"
+            style="display:none;"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-actions">
+      <span id="saveSettings" class="action-btn confirm-btn"></span>
+    </div>
+
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/message.js"></script>
+    <script src="./js/options.js"></script>
+  </body>
+</html>

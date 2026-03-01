@@ -8,6 +8,7 @@
       "default_icon": "assets/logo_24x24.png",
       "default_title": "__MSG_actionTitle__"
    },
+   "options_page": "options.html",
    "description": "__MSG_extDescription__",
    "homepage_url": "https://immmmm.com",
    "icons": {
@@ -17,7 +18,19 @@
    },
    "background": {
       "service_worker": "js/background.js"
-    },
+   },
+   "content_scripts": [
+      {
+         "matches": [
+            "http://*/*",
+            "https://*/*"
+         ],
+         "js": [
+            "js/content-script.js"
+         ],
+         "run_at": "document_idle"
+      }
+   ],
    "permissions": [
       "tabs",
       "storage",

@@ -29,6 +29,11 @@ input:focus::placeholder ,.common-editor-inputer:focus::placeholder {
     line-height: 1.5;
     position: relative;
 }
+.options-body{
+    max-width: 760px;
+    margin: 0 auto;
+    padding-top: 1rem;
+}
 a{color: #555;}
 .title{
     width: 100px;
@@ -82,6 +87,11 @@ a{color: #555;}
     line-height: 1.5rem;
 }
 input.inputer{border-bottom: 1px solid #ccc;width:75%;}
+.options-body input.inputer{
+    width:100%;
+    display:block;
+    margin-bottom:0;
+}
 
 #saveKey{margin:0;flex:1;}
 
@@ -157,6 +167,79 @@ input.inputer{border-bottom: 1px solid #ccc;width:75%;}
 .tag-list .hidetag:hover{background-color:#666;}
 .tag-hide{display: none;}
 .tag-hide input.inputer{width:40%;font-size:11px;}
+.tag-hide .setting-checkbox{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: #555;
+}
+.tag-hide .setting-checkbox input{
+    width: auto;
+}
+.tag-hide .prompt-config-input{
+    display: block;
+    width: 100%;
+    min-height: 72px;
+    margin: 0 0 8px;
+    padding: 6px 0;
+    font-size: 11px;
+    line-height: 1.4;
+    border-bottom: 1px solid #ccc;
+}
+.settings-section{
+    margin-top: 1rem;
+}
+.settings-section-title{
+    margin-bottom: .5rem;
+    font-size: .875rem;
+    font-weight: 700;
+    color: rgb(55,65,81);
+}
+.settings-stack{
+    display: block;
+}
+.setting-field{
+    margin-bottom: 14px;
+}
+.setting-field:last-child{
+    margin-bottom: 0;
+}
+.setting-label{
+    display: block;
+    margin-bottom: 6px;
+    font-size: .8125rem;
+    font-weight: 700;
+    color: rgb(55,65,81);
+}
+.setting-help{
+    margin-top: 6px;
+    font-size: .75rem;
+    line-height: 1.45;
+    color: #6b7280;
+}
+.setting-checkbox-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.setting-checkbox-row input{
+    width: auto;
+}
+.setting-actions-row{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.secondary-btn{
+    background-color: rgb(75,85,99);
+}
+.settings-actions{
+    margin-top: 1rem;
+    text-align: right;
+}
 
 .visibility-list .item-lock.lock-now{
     background-color:rgb(22,163,74);

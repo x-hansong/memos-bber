@@ -20,6 +20,45 @@
    "saveBtn":{
       "message": "Save"
    },
+   "settingsTitle":{
+      "message": "Settings"
+   },
+   "settingsMemosSection":{
+      "message": "Memos Connection"
+   },
+   "settingsTagsSection":{
+      "message": "Default Tags"
+   },
+   "settingsAutoTagSection":{
+      "message": "Auto Tag"
+   },
+   "settingsTransferSection":{
+      "message": "Import / Export"
+   },
+   "settingsTransferHelp":{
+      "message": "Export downloads the current settings as JSON; import replaces current settings with values from a JSON file."
+   },
+   "exportSettingsBtn":{
+      "message": "Export Settings"
+   },
+   "importSettingsBtn":{
+      "message": "Import Settings"
+   },
+   "apiUrlLabel":{
+      "message": "Memos URL"
+   },
+   "apiTokensLabel":{
+      "message": "Memos Access Token"
+   },
+   "hideInputLabel":{
+      "message": "Private Visibility Tag"
+   },
+   "showInputLabel":{
+      "message": "Public Visibility Tag"
+   },
+   "quickSaveTagLabel":{
+      "message": "Default Quick Save Tag"
+   },
    "placeApiUrl":{
       "message": "Memos Self Home Url"
    },
@@ -47,6 +86,51 @@
    "placeShowInput":{
       "message": "Default 'Everyone can see' Tag name"
    },
+   "placeQuickSaveTag":{
+      "message": "Quick save default tag (for example: tech or #tech)"
+   },
+   "autoTagEnabledLabel":{
+      "message": "Auto pick one tag before save"
+   },
+   "autoTagEnabledHelp":{
+      "message": "When enabled, the extension asks the model to choose one tag from your candidate list before saving."
+   },
+   "autoTagCandidatesLabel":{
+      "message": "Candidate Tags"
+   },
+   "placeAutoTagCandidates":{
+      "message": "Candidate tags (split by spaces or commas, e.g. tech, work)"
+   },
+   "autoTagApiUrlLabel":{
+      "message": "Model API URL"
+   },
+   "placeAutoTagApiUrl":{
+      "message": "Model API URL (OpenAI-compatible chat completions)"
+   },
+   "autoTagApiKeyLabel":{
+      "message": "Model API Key"
+   },
+   "placeAutoTagApiKey":{
+      "message": "Model API key"
+   },
+   "autoTagModelLabel":{
+      "message": "Model Name"
+   },
+   "placeAutoTagModel":{
+      "message": "Model name (for example: gpt-4o-mini)"
+   },
+   "autoTagSystemPromptLabel":{
+      "message": "System Prompt"
+   },
+   "placeAutoTagSystemPrompt":{
+      "message": "Auto-tag system prompt (supports {{candidate_tags}} {{content}})"
+   },
+   "autoTagUserPromptLabel":{
+      "message": "User Prompt"
+   },
+   "placeAutoTagUserPrompt":{
+      "message": "Auto-tag user prompt (supports {{candidate_tags}} {{content}} {{extra_context}})"
+   },
    "picDrag":{
       "message": "Drag upload the image"
    },
@@ -67,6 +151,12 @@
    },
    "saveSuccess":{
       "message": "Save Info Success!"
+   },
+   "importSuccess":{
+      "message": "Imported settings successfully"
+   },
+   "importFailed":{
+      "message": "Failed to import settings"
    },
    "searchNow":{
       "message": "What are you looking for?"
@@ -91,6 +181,18 @@
    },
    "memoFailed":{
       "message": "Failed! 😭"
+   },
+   "quickSaveBtn":{
+      "message": "Save to Memos"
+   },
+   "quickSaveSuccess":{
+      "message": "Saved to Memos"
+   },
+   "quickSaveFailed":{
+      "message": "Save failed"
+   },
+   "quickSaveNeedSetup":{
+      "message": "Configure the Memos URL and access token first"
    },
    "invalidToken":{
       "message": "Invalid token or url 😭"
