@@ -9,6 +9,13 @@ function get_info(callback) {
       hidetag: '',
       showtag: '',
       quicksavetag: '',
+      autoTagEnabled: false,
+      autoTagCandidates: '',
+      autoTagApiUrl: '',
+      autoTagApiKey: '',
+      autoTagModel: '',
+      autoTagSystemPrompt: '',
+      autoTagUserPrompt: '',
       memo_lock: '',
       open_action: '',
       open_content: '',
@@ -29,6 +36,13 @@ function get_info(callback) {
       returnObject.hidetag = items.hidetag
       returnObject.showtag = items.showtag
       returnObject.quicksavetag = items.quicksavetag
+      returnObject.autoTagEnabled = items.autoTagEnabled
+      returnObject.autoTagCandidates = items.autoTagCandidates
+      returnObject.autoTagApiUrl = items.autoTagApiUrl
+      returnObject.autoTagApiKey = items.autoTagApiKey
+      returnObject.autoTagModel = items.autoTagModel
+      returnObject.autoTagSystemPrompt = items.autoTagSystemPrompt
+      returnObject.autoTagUserPrompt = items.autoTagUserPrompt
       returnObject.memo_lock = items.memo_lock
       returnObject.open_content = items.open_content
       returnObject.open_action = items.open_action
@@ -38,39 +52,6 @@ function get_info(callback) {
       if (callback) callback(returnObject)
     }
   )
-}
-
-function parseJwtPayload(token) {
-  try {
-    var parts = token.split('.')
-    if (parts.length < 2) {
-      return null
-    }
-    var base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-    var padding = base64.length % 4
-    if (padding) {
-      base64 += '='.repeat(4 - padding)
-    }
-    return JSON.parse(atob(base64))
-  } catch (error) {
-    return null
-  }
-}
-
-function saveApiConfig(apiUrl, apiTokens, userid) {
-  chrome.storage.sync.set(
-    {
-      apiUrl: apiUrl,
-      apiTokens: apiTokens,
-      userid: userid
-    },
-    function () {
-      $.message({
-        message: chrome.i18n.getMessage("saveSuccess")
-      });
-      $('#blog_info').hide();
-    }
-  );
 }
 
 function getLegacyMemosUrl(info, filter) {
@@ -122,11 +103,227 @@ function getMemoItems(data) {
   })
 }
 
-get_info(function (info) {
-  if (info.status) {
-    //已经有绑定信息了，折叠
-    $('#blog_info').hide()
+function normalizeTagValue(tag) {
+  var rawTag = (tag || '').trim()
+  if (!rawTag) {
+    return ''
   }
+  return rawTag.charAt(0) === '#' ? rawTag : '#' + rawTag
+}
+
+function parseTagValues(tagText) {
+  var seen = {}
+  return (tagText || '')
+    .split(/[\s,，]+/)
+    .map(normalizeTagValue)
+    .filter(function(tag) {
+      if (!tag || seen[tag]) {
+        return false
+      }
+      seen[tag] = true
+      return true
+    })
+}
+
+function getDefaultAutoTagSystemPrompt() {
+  return [
+    '你是一个严格的标签分类器。',
+    '你的任务是：从提供的候选标签中，选择最适合当前内容的一个标签。',
+    '规则：',
+    '1. 只能从候选标签列表中选择，绝不能创造新标签。',
+    '2. 只返回一个标签。',
+    '3. 返回内容必须是纯标签文本，不要解释、不要句子、不要标点、不要代码块。',
+    '4. 如果候选标签都不合适，就返回：SKIP',
+    '5. 如果有明确匹配，优先选择最具体的标签。'
+  ].join('\n')
+}
+
+function getDefaultAutoTagUserPrompt() {
+  return [
+    '请根据下面内容选择一个最合适的标签。',
+    '',
+    '候选标签：',
+    '{{candidate_tags}}',
+    '',
+    '待分类内容：',
+    '{{content}}',
+    '',
+    '补充上下文：',
+    '{{extra_context}}'
+  ].join('\n')
+}
+
+function renderAutoTagPrompt(template, vars) {
+  return (template || '').replace(/\{\{\s*([a-z_]+)\s*\}\}/g, function(_, key) {
+    if (Object.prototype.hasOwnProperty.call(vars, key)) {
+      return vars[key]
+    }
+    return ''
+  })
+}
+
+function resolveAutoTagApiUrl(apiUrl) {
+  var rawUrl = (apiUrl || '').trim()
+  if (!rawUrl) {
+    return ''
+  }
+  if (/\/chat\/completions\/?$/.test(rawUrl)) {
+    return rawUrl
+  }
+  return rawUrl.replace(/\/?$/, '/') + 'chat/completions'
+}
+
+function findMatchedCandidateTag(rawText, candidateTags) {
+  var text = (rawText || '').trim()
+  var directTag = normalizeTagValue(text.replace(/^["'`\s]+|["'`\s]+$/g, ''))
+  if (candidateTags.indexOf(directTag) >= 0) {
+    return directTag
+  }
+
+  var parts = text.split(/[\s,，\n]+/)
+  for (var i = 0; i < parts.length; i++) {
+    var normalized = normalizeTagValue(parts[i].replace(/^["'`]+|["'`]+$/g, ''))
+    if (candidateTags.indexOf(normalized) >= 0) {
+      return normalized
+    }
+  }
+
+  for (var j = 0; j < candidateTags.length; j++) {
+    var candidate = candidateTags[j]
+    var plainCandidate = candidate.slice(1)
+    if (text.indexOf(candidate) >= 0 || text.indexOf(plainCandidate) >= 0) {
+      return candidate
+    }
+  }
+
+  return ''
+}
+
+function findExistingCandidateTag(content, candidateTags) {
+  var matches = (content || '').match(/(#[^\s#]+)/g) || []
+  for (var i = 0; i < matches.length; i++) {
+    if (candidateTags.indexOf(matches[i]) >= 0) {
+      return matches[i]
+    }
+  }
+  return ''
+}
+
+function appendTagsToContent(content, tags) {
+  var body = content || ''
+  var extraTags = (tags || []).filter(function(tag) {
+    return tag && body.indexOf(tag) === -1
+  })
+
+  if (extraTags.length === 0) {
+    return body
+  }
+
+  if (!body) {
+    return extraTags.join(' ')
+  }
+
+  return body + '\n\n' + extraTags.join(' ')
+}
+
+function resolveVisibilityFromContent(content, info) {
+  var nowTag = (content || '').match(/(#[^\s#]+)/)
+  var sendvisi = info.memo_lock || ''
+  if (nowTag) {
+    if (nowTag[1] == info.showtag) {
+      sendvisi = 'PUBLIC'
+    } else if (nowTag[1] == info.hidetag) {
+      sendvisi = 'PRIVATE'
+    }
+  }
+  return sendvisi
+}
+
+function requestAutoTag(content, info, callback) {
+  var done = typeof callback === 'function' ? callback : function () {}
+  var candidateTags = parseTagValues(info.autoTagCandidates)
+  var endpoint = resolveAutoTagApiUrl(info.autoTagApiUrl)
+  var apiKey = (info.autoTagApiKey || '').trim()
+  var model = (info.autoTagModel || '').trim()
+  var text = (content || '').trim()
+  var existingTag = findExistingCandidateTag(text, candidateTags)
+  var promptVars = {
+    candidate_tags: candidateTags.join(', '),
+    content: text,
+    extra_context: ''
+  }
+  var systemPrompt = renderAutoTagPrompt(info.autoTagSystemPrompt || getDefaultAutoTagSystemPrompt(), promptVars)
+  var userPrompt = renderAutoTagPrompt(info.autoTagUserPrompt || getDefaultAutoTagUserPrompt(), promptVars)
+
+  if (existingTag) {
+    done(existingTag)
+    return
+  }
+
+  if (!info.autoTagEnabled || !text || candidateTags.length === 0 || !endpoint || !apiKey || !model) {
+    done('')
+    return
+  }
+
+  var timeoutId = null
+  var abortController = typeof AbortController === 'function' ? new AbortController() : null
+  if (abortController) {
+    timeoutId = setTimeout(function() {
+      abortController.abort()
+    }, 8000)
+  }
+
+  fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model: model,
+      temperature: 0,
+      max_tokens: 16,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ]
+    }),
+    signal: abortController ? abortController.signal : undefined
+  }).then(function(response) {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+    if (!response.ok) {
+      throw new Error('Request failed')
+    }
+    return response.json()
+  }).then(function(data) {
+    var modelOutput = ''
+    if (data && data.choices && data.choices[0] && data.choices[0].message) {
+      modelOutput = data.choices[0].message.content || ''
+    }
+    done(findMatchedCandidateTag(modelOutput, candidateTags))
+  }).catch(function() {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+    done('')
+  })
+}
+
+function prepareContentForSave(content, info, callback) {
+  requestAutoTag(content, info, function(selectedTag) {
+    callback(appendTagsToContent(content, selectedTag ? [selectedTag] : []), selectedTag)
+  })
+}
+
+get_info(function (info) {
   var memoNow = info.memo_lock
   if (memoNow == '') {
     chrome.storage.sync.set(
@@ -141,11 +338,6 @@ get_info(function (info) {
   } else if (memoNow == "PROTECTED") {
     $("#lock-now").text(chrome.i18n.getMessage("lockProtected"))
   }
-  $('#apiUrl').val(info.apiUrl)
-  $('#apiTokens').val(info.apiTokens)
-  $('#hideInput').val(info.hidetag)
-  $('#showInput').val(info.showtag)
-  $('#quickSaveTagInput').val(info.quicksavetag)
   if (info.open_action === 'upload_image') {
     //打开的时候就是上传图片
     uploadImage(info.open_content)
@@ -322,51 +514,6 @@ function uploadImageNow(base64String, file) {
   });
 }
 
-$('#saveKey').click(function () {
-  var apiUrl = $('#apiUrl').val()
-  if (apiUrl.length > 0 && !apiUrl.endsWith('/')) {
-    apiUrl += '/';
-  }
-  var apiTokens = $('#apiTokens').val()
-  // 设置请求参数
-  const settings = {
-    async: true,
-    crossDomain: true,
-    url: apiUrl + 'api/v1/auth/status',
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + apiTokens
-    }
-  };
-
-  $.ajax(settings).done(function (response) {
-    // 0.24 版本后无 id 字段，改为从 name 字段获取和判断认证是否成功
-    if (response && response.name) {
-      // 如果响应包含用户name "users/{id}"，存储 apiUrl 和 apiTokens
-      var userid = parseInt(response.name.split('/').pop(), 10)
-      saveApiConfig(apiUrl, apiTokens, userid);
-    } else {
-      // 如果响应不包含用户 ID，显示错误消息
-      $.message({
-        message: chrome.i18n.getMessage("invalidToken")
-      });
-    }
-  }).fail(function (xhr) {
-    // 新版实例可能移除了 auth/status，退回到本地解析 JWT 的 sub 作为 user id
-    if (xhr && xhr.status === 404) {
-      var payload = parseJwtPayload(apiTokens)
-      var userid = payload && payload.sub ? parseInt(payload.sub, 10) : NaN
-      if (!Number.isNaN(userid)) {
-        saveApiConfig(apiUrl, apiTokens, userid);
-        return
-      }
-    }
-    $.message({
-      message: chrome.i18n.getMessage("invalidToken")
-    });
-  });
-});
-
 $('#opensite').click(function () {
   get_info(function (info) {
     chrome.tabs.create({url:info.apiUrl})
@@ -388,7 +535,6 @@ $('#tags').click(function () {
           $.each(uniTags, function (_, tag) {
             tagDom += '<span class="item-container">#' + tag + '</span>';
           });
-          tagDom += '<svg id="hideTag" class="hidetag" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path d="M78.807 362.435c201.539 314.275 666.962 314.188 868.398-.241 16.056-24.99 13.143-54.241-4.04-62.54-17.244-8.377-40.504 3.854-54.077 24.887-174.484 272.338-577.633 272.41-752.19.195-13.573-21.043-36.874-33.213-54.113-24.837-17.177 8.294-20.06 37.545-3.978 62.536z" fill="#fff"/><path d="M894.72 612.67L787.978 494.386l38.554-34.785 106.742 118.251-38.554 34.816zM635.505 727.51l-49.04-147.123 49.255-16.41 49.054 147.098-49.27 16.435zm-236.18-12.001l-49.568-15.488 43.29-138.48 49.557 15.513-43.28 138.455zM154.49 601.006l-38.743-34.565 95.186-106.732 38.763 34.566-95.206 106.731z" fill="#fff"/></svg>'
           $("#taglist").html(tagDom).slideToggle(500)
       })
     } else {
@@ -397,27 +543,6 @@ $('#tags').click(function () {
       })
     }
   })
-})
-
-$(document).on("click","#hideTag",function () {
-  $('#taghide').slideToggle(500)
-})
-
-$('#saveTag').click(function () {
-  // 保存数据
-  chrome.storage.sync.set(
-    {
-      hidetag: $('#hideInput').val(),
-      showtag: $('#showInput').val(),
-      quicksavetag: $('#quickSaveTagInput').val()
-    },
-    function () {
-      $.message({
-        message: chrome.i18n.getMessage("saveSuccess")
-      })
-      $('#taghide').hide()
-    }
-  )
 })
 
 $('#lock').click(function () {
@@ -643,7 +768,7 @@ function add(str) {
 }
 
 $('#blog_info_edit').click(function () {
-  $('#blog_info').slideToggle()
+  chrome.runtime.openOptionsPage()
 })
 
 $('#content_submit_text').click(function () {
@@ -688,65 +813,56 @@ function sendText() {
       })
       //$("#content_submit_text").attr('disabled','disabled');
       let content = $("textarea[name=text]").val()
-      var hideTag = info.hidetag
-      var showTag = info.showtag
-      var nowTag = $("textarea[name=text]").val().match(/(#[^\s#]+)/)
-      var sendvisi = info.memo_lock || ''
-      if(nowTag){
-        if(nowTag[1] == showTag){
-          sendvisi = 'PUBLIC'
-        }else if(nowTag[1] == hideTag){
-          sendvisi = 'PRIVATE'
-        }
-      }
-      $.ajax({
-        url:info.apiUrl+'api/v1/memos',
-        type:"POST",
-        data:JSON.stringify({
-          'content': content,
-          'visibility': sendvisi
-        }),
-        contentType:"application/json",
-        dataType:"json",
-        headers : {'Authorization':'Bearer ' + info.apiTokens},
-        success: function(data){
-          if(info.resourceIdList.length > 0 ){
-            //匹配图片
-            $.ajax({
-              url:info.apiUrl+'api/v1/'+data.name,
-              type:"PATCH",
-              data:JSON.stringify({
-                'resources': info.resourceIdList || [],
-              }),
-              contentType:"application/json",
-              dataType:"json",
-              headers : {'Authorization':'Bearer ' + info.apiTokens},
-              success: function(res){
-                getOne(data.name)
-              }
-            })
-          }else{
-            getOne(data.name)
-          }
-          chrome.storage.sync.set(
-            { open_action: '', open_content: '',resourceIdList:[]},
-            function () {
-              $.message({
-                message: chrome.i18n.getMessage("memoSuccess")
-              })
-              //$("#content_submit_text").removeAttr('disabled');
-              $("textarea[name=text]").val('')
-            }
-          )
-      },error:function(err){//清空open_action（打开时候进行的操作）,同时清空open_content
-              chrome.storage.sync.set(
-                { open_action: '', open_content: '',resourceIdList:[] },
-                function () {
-                  $.message({
-                    message: chrome.i18n.getMessage("memoFailed")
-                  })
+      prepareContentForSave(content, info, function(finalContent) {
+        $.ajax({
+          url:info.apiUrl+'api/v1/memos',
+          type:"POST",
+          data:JSON.stringify({
+            'content': finalContent,
+            'visibility': resolveVisibilityFromContent(finalContent, info)
+          }),
+          contentType:"application/json",
+          dataType:"json",
+          headers : {'Authorization':'Bearer ' + info.apiTokens},
+          success: function(data){
+            if(info.resourceIdList.length > 0 ){
+              //匹配图片
+              $.ajax({
+                url:info.apiUrl+'api/v1/'+data.name,
+                type:"PATCH",
+                data:JSON.stringify({
+                  'resources': info.resourceIdList || [],
+                }),
+                contentType:"application/json",
+                dataType:"json",
+                headers : {'Authorization':'Bearer ' + info.apiTokens},
+                success: function(res){
+                  getOne(data.name)
                 }
-              )},
+              })
+            }else{
+              getOne(data.name)
+            }
+            chrome.storage.sync.set(
+              { open_action: '', open_content: '',resourceIdList:[]},
+              function () {
+                $.message({
+                  message: chrome.i18n.getMessage("memoSuccess")
+                })
+                //$("#content_submit_text").removeAttr('disabled');
+                $("textarea[name=text]").val('')
+              }
+            )
+        },error:function(err){//清空open_action（打开时候进行的操作）,同时清空open_content
+                chrome.storage.sync.set(
+                  { open_action: '', open_content: '',resourceIdList:[] },
+                  function () {
+                    $.message({
+                      message: chrome.i18n.getMessage("memoFailed")
+                    })
+                  }
+                )},
+        })
       })
     } else {
       $.message({
