@@ -35,8 +35,101 @@
    "settingsTransferSection":{
       "message": "配置导入导出"
    },
+   "settingsS3SyncSection":{
+      "message": "MinIO 配置同步"
+   },
    "settingsTransferHelp":{
       "message": "导出会下载当前设置为 JSON 文件；导入会用 JSON 文件中的配置覆盖当前设置。"
+   },
+   "s3SyncEnabledLabel":{
+      "message": "启用 MinIO 同步"
+   },
+   "s3SyncEnabledHelp":{
+      "message": "开启后会把当前配置同步到 MinIO，并按设定周期自动做双向检查。长期密钥将保存在扩展本地。"
+   },
+   "s3EndpointLabel":{
+      "message": "MinIO Endpoint"
+   },
+   "s3EndpointHelp":{
+      "message": "MinIO 服务地址，支持协议和端口，例如 https://minio.example.com:9000"
+   },
+   "s3RegionLabel":{
+      "message": "签名 Region"
+   },
+   "s3RegionHelp":{
+      "message": "用于 S3 签名的 region，MinIO 常见可留空，默认会使用 us-east-1"
+   },
+   "s3BucketLabel":{
+      "message": "Bucket 名称"
+   },
+   "s3BucketHelp":{
+      "message": "用于存储配置 JSON 的 bucket"
+   },
+   "s3ObjectKeyLabel":{
+      "message": "对象路径"
+   },
+   "s3ObjectKeyHelp":{
+      "message": "例如 memos-bber/settings.json"
+   },
+   "s3AccessKeyIdLabel":{
+      "message": "Access Key"
+   },
+   "s3AccessKeyIdHelp":{
+      "message": "MinIO Access Key ID"
+   },
+   "s3SecretAccessKeyLabel":{
+      "message": "Secret Key"
+   },
+   "s3SecretAccessKeyHelp":{
+      "message": "MinIO Secret Access Key，仅保存在当前浏览器扩展存储中"
+   },
+   "s3SyncIntervalLabel":{
+      "message": "定时同步间隔（小时）"
+   },
+   "s3SyncIntervalHelp":{
+      "message": "1 到 24 小时。保存后会立即推送一次，后台也会按该间隔自动检查。"
+   },
+   "s3SyncBidirectionalLabel":{
+      "message": "启用双向同步"
+   },
+   "s3SyncBidirectionalHelp":{
+      "message": "开启后会比较本地和远端更新时间，自动采用较新的配置。关闭后只会把本地推到 MinIO。"
+   },
+   "s3ForcePathStyleLabel":{
+      "message": "使用路径风格 URL"
+   },
+   "s3ForcePathStyleHelp":{
+      "message": "MinIO 建议开启。开启后使用 endpoint/bucket/key 形式，而不是 bucket.endpoint。"
+   },
+   "s3SyncStatusLabel":{
+      "message": "同步状态"
+   },
+   "s3SyncStatusHelp":{
+      "message": "这里显示最近一次自动同步结果。若失败，请检查 CORS、endpoint、bucket 权限和系统时间。"
+   },
+   "s3SyncStatusIdle":{
+      "message": "尚未执行同步"
+   },
+   "s3SyncStatusDisabled":{
+      "message": "同步已关闭"
+   },
+   "s3SyncStatusSuccess":{
+      "message": "最近一次同步成功"
+   },
+   "s3SyncStatusError":{
+      "message": "最近一次同步失败"
+   },
+   "s3SyncStatusRunning":{
+      "message": "同步进行中"
+   },
+   "s3SyncStatusLastAt":{
+      "message": "最近时间"
+   },
+   "s3SyncStatusReason":{
+      "message": "结果"
+   },
+   "s3SyncStatusDetail":{
+      "message": "详情"
    },
    "exportSettingsBtn":{
       "message": "导出配置"

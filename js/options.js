@@ -14,6 +14,19 @@ var CONFIG_EXPORT_KEYS = [
   'autoTagUserPrompt'
 ]
 
+var S3_SYNC_DEFAULTS = {
+  s3SyncEnabled: false,
+  s3Endpoint: '',
+  s3Region: '',
+  s3Bucket: '',
+  s3ObjectKey: '',
+  s3AccessKeyId: '',
+  s3SecretAccessKey: '',
+  s3SyncIntervalHours: 6,
+  s3SyncBidirectional: true,
+  s3ForcePathStyle: true
+}
+
 function parseJwtPayload(token) {
   try {
     var parts = token.split('.')
@@ -65,6 +78,7 @@ function setTexts() {
   document.getElementById('settingsTagsSection').textContent = chrome.i18n.getMessage('settingsTagsSection')
   document.getElementById('settingsAutoTagSection').textContent = chrome.i18n.getMessage('settingsAutoTagSection')
   document.getElementById('settingsTransferSection').textContent = chrome.i18n.getMessage('settingsTransferSection')
+  document.getElementById('settingsS3SyncSection').textContent = chrome.i18n.getMessage('settingsS3SyncSection')
   document.getElementById('settingsTransferHelp').textContent = chrome.i18n.getMessage('settingsTransferHelp')
   document.getElementById('saveSettings').textContent = chrome.i18n.getMessage('saveBtn')
   document.getElementById('exportSettings').textContent = chrome.i18n.getMessage('exportSettingsBtn')
@@ -94,11 +108,34 @@ function setTexts() {
   document.getElementById('autoTagSystemPromptHelp').textContent = chrome.i18n.getMessage('placeAutoTagSystemPrompt')
   document.getElementById('autoTagUserPromptLabel').textContent = chrome.i18n.getMessage('autoTagUserPromptLabel')
   document.getElementById('autoTagUserPromptHelp').textContent = chrome.i18n.getMessage('placeAutoTagUserPrompt')
+
+  document.getElementById('s3SyncEnabledLabel').textContent = chrome.i18n.getMessage('s3SyncEnabledLabel')
+  document.getElementById('s3SyncEnabledHelp').textContent = chrome.i18n.getMessage('s3SyncEnabledHelp')
+  document.getElementById('s3EndpointLabel').textContent = chrome.i18n.getMessage('s3EndpointLabel')
+  document.getElementById('s3EndpointHelp').textContent = chrome.i18n.getMessage('s3EndpointHelp')
+  document.getElementById('s3RegionLabel').textContent = chrome.i18n.getMessage('s3RegionLabel')
+  document.getElementById('s3RegionHelp').textContent = chrome.i18n.getMessage('s3RegionHelp')
+  document.getElementById('s3BucketLabel').textContent = chrome.i18n.getMessage('s3BucketLabel')
+  document.getElementById('s3BucketHelp').textContent = chrome.i18n.getMessage('s3BucketHelp')
+  document.getElementById('s3ObjectKeyLabel').textContent = chrome.i18n.getMessage('s3ObjectKeyLabel')
+  document.getElementById('s3ObjectKeyHelp').textContent = chrome.i18n.getMessage('s3ObjectKeyHelp')
+  document.getElementById('s3AccessKeyIdLabel').textContent = chrome.i18n.getMessage('s3AccessKeyIdLabel')
+  document.getElementById('s3AccessKeyIdHelp').textContent = chrome.i18n.getMessage('s3AccessKeyIdHelp')
+  document.getElementById('s3SecretAccessKeyLabel').textContent = chrome.i18n.getMessage('s3SecretAccessKeyLabel')
+  document.getElementById('s3SecretAccessKeyHelp').textContent = chrome.i18n.getMessage('s3SecretAccessKeyHelp')
+  document.getElementById('s3SyncIntervalLabel').textContent = chrome.i18n.getMessage('s3SyncIntervalLabel')
+  document.getElementById('s3SyncIntervalHelp').textContent = chrome.i18n.getMessage('s3SyncIntervalHelp')
+  document.getElementById('s3SyncBidirectionalLabel').textContent = chrome.i18n.getMessage('s3SyncBidirectionalLabel')
+  document.getElementById('s3SyncBidirectionalHelp').textContent = chrome.i18n.getMessage('s3SyncBidirectionalHelp')
+  document.getElementById('s3ForcePathStyleLabel').textContent = chrome.i18n.getMessage('s3ForcePathStyleLabel')
+  document.getElementById('s3ForcePathStyleHelp').textContent = chrome.i18n.getMessage('s3ForcePathStyleHelp')
+  document.getElementById('s3SyncStatusLabel').textContent = chrome.i18n.getMessage('s3SyncStatusLabel')
+  document.getElementById('s3SyncStatusHelp').textContent = chrome.i18n.getMessage('s3SyncStatusHelp')
 }
 
 function loadSettings() {
   chrome.storage.sync.get(
-    {
+    Object.assign({
       apiUrl: '',
       apiTokens: '',
       hidetag: '',
@@ -111,7 +148,7 @@ function loadSettings() {
       autoTagModel: '',
       autoTagSystemPrompt: '',
       autoTagUserPrompt: ''
-    },
+    }, S3_SYNC_DEFAULTS),
     function(items) {
       document.getElementById('apiUrl').value = items.apiUrl
       document.getElementById('apiTokens').value = items.apiTokens
@@ -125,6 +162,17 @@ function loadSettings() {
       document.getElementById('autoTagModelInput').value = items.autoTagModel
       document.getElementById('autoTagSystemPromptInput').value = items.autoTagSystemPrompt || getDefaultAutoTagSystemPrompt()
       document.getElementById('autoTagUserPromptInput').value = items.autoTagUserPrompt || getDefaultAutoTagUserPrompt()
+      document.getElementById('s3SyncEnabled').checked = Boolean(items.s3SyncEnabled)
+      document.getElementById('s3EndpointInput').value = items.s3Endpoint
+      document.getElementById('s3RegionInput').value = items.s3Region
+      document.getElementById('s3BucketInput').value = items.s3Bucket
+      document.getElementById('s3ObjectKeyInput').value = items.s3ObjectKey
+      document.getElementById('s3AccessKeyIdInput').value = items.s3AccessKeyId
+      document.getElementById('s3SecretAccessKeyInput').value = items.s3SecretAccessKey
+      document.getElementById('s3SyncIntervalHoursInput').value = String(items.s3SyncIntervalHours || S3_SYNC_DEFAULTS.s3SyncIntervalHours)
+      document.getElementById('s3SyncBidirectional').checked = Boolean(items.s3SyncBidirectional)
+      document.getElementById('s3ForcePathStyle').checked = Boolean(items.s3ForcePathStyle)
+      loadSyncStatus(Boolean(items.s3SyncEnabled))
     }
   )
 }
@@ -144,11 +192,44 @@ function getBaseSettings() {
   }
 }
 
+function getSyncSettings() {
+  var intervalHours = parseInt(document.getElementById('s3SyncIntervalHoursInput').value, 10)
+  if (Number.isNaN(intervalHours)) {
+    intervalHours = S3_SYNC_DEFAULTS.s3SyncIntervalHours
+  }
+
+  return {
+    s3SyncEnabled: document.getElementById('s3SyncEnabled').checked,
+    s3Endpoint: document.getElementById('s3EndpointInput').value.trim().replace(/\/+$/, ''),
+    s3Region: document.getElementById('s3RegionInput').value.trim(),
+    s3Bucket: document.getElementById('s3BucketInput').value.trim(),
+    s3ObjectKey: document.getElementById('s3ObjectKeyInput').value.trim().replace(/^\/+/, ''),
+    s3AccessKeyId: document.getElementById('s3AccessKeyIdInput').value.trim(),
+    s3SecretAccessKey: document.getElementById('s3SecretAccessKeyInput').value.trim(),
+    s3SyncIntervalHours: Math.min(24, Math.max(1, intervalHours)),
+    s3SyncBidirectional: document.getElementById('s3SyncBidirectional').checked,
+    s3ForcePathStyle: document.getElementById('s3ForcePathStyle').checked
+  }
+}
+
+function notifySyncSettingsSaved() {
+  chrome.storage.local.set({
+    configUpdatedAt: new Date().toISOString()
+  }, function() {
+    chrome.runtime.sendMessage({
+      type: 's3-sync-settings-saved'
+    }, function() {
+      loadSyncStatus(document.getElementById('s3SyncEnabled').checked)
+    })
+  })
+}
+
 function persistSettings(settings, messageKey) {
   chrome.storage.sync.set(settings, function() {
     $.message({
       message: chrome.i18n.getMessage(messageKey || 'saveSuccess')
     })
+    notifySyncSettingsSaved()
   })
 }
 
@@ -211,6 +292,7 @@ function importSettingsFile(file) {
         $.message({
           message: chrome.i18n.getMessage('importSuccess')
         })
+        notifySyncSettingsSaved()
       })
     } catch (error) {
       $.message({
@@ -226,17 +308,85 @@ function importSettingsFile(file) {
   reader.readAsText(file)
 }
 
+function formatSyncStatusTime(value) {
+  if (!value) {
+    return ''
+  }
+
+  var date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toLocaleString()
+}
+
+function buildSyncStatusLines(state, enabled) {
+  if (!enabled) {
+    return [chrome.i18n.getMessage('s3SyncStatusDisabled')]
+  }
+
+  if (!state || !state.status) {
+    return [chrome.i18n.getMessage('s3SyncStatusIdle')]
+  }
+
+  var statusKey = 's3SyncStatusIdle'
+  if (state.status === 'success') {
+    statusKey = 's3SyncStatusSuccess'
+  } else if (state.status === 'error') {
+    statusKey = 's3SyncStatusError'
+  } else if (state.status === 'running') {
+    statusKey = 's3SyncStatusRunning'
+  }
+
+  var lines = [chrome.i18n.getMessage(statusKey)]
+  var lastAt = formatSyncStatusTime(state.lastSyncAt)
+  if (lastAt) {
+    lines.push(chrome.i18n.getMessage('s3SyncStatusLastAt') + '：' + lastAt)
+  }
+  if (state.reason) {
+    lines.push(chrome.i18n.getMessage('s3SyncStatusReason') + '：' + state.reason)
+  }
+  if (state.detail) {
+    lines.push(chrome.i18n.getMessage('s3SyncStatusDetail') + '：' + state.detail)
+  }
+
+  return lines
+}
+
+function loadSyncStatus(enabled) {
+  chrome.storage.local.get({
+    s3SyncState: null
+  }, function(items) {
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+    }
+
+    document.getElementById('s3SyncStatusValue').innerHTML = buildSyncStatusLines(items.s3SyncState, enabled)
+      .map(function(line) {
+        return '<div>' + escapeHtml(line) + '</div>'
+      })
+      .join('')
+  })
+}
+
 function saveSettings() {
   var apiUrl = document.getElementById('apiUrl').value.trim()
   var apiTokens = document.getElementById('apiTokens').value.trim()
   var baseSettings = getBaseSettings()
+  var syncSettings = getSyncSettings()
 
   if (apiUrl.length > 0 && !apiUrl.endsWith('/')) {
     apiUrl += '/'
   }
 
   if (!apiUrl && !apiTokens) {
-    persistSettings(Object.assign({}, baseSettings, {
+    persistSettings(Object.assign({}, baseSettings, syncSettings, {
       apiUrl: '',
       apiTokens: '',
       userid: ''
@@ -245,7 +395,7 @@ function saveSettings() {
   }
 
   if (!apiUrl || !apiTokens) {
-    persistSettings(Object.assign({}, baseSettings, {
+    persistSettings(Object.assign({}, baseSettings, syncSettings, {
       apiUrl: apiUrl,
       apiTokens: apiTokens,
       userid: ''
@@ -264,7 +414,7 @@ function saveSettings() {
   }).done(function(response) {
     if (response && response.name) {
       var userid = parseInt(response.name.split('/').pop(), 10)
-      persistSettings(Object.assign({}, baseSettings, {
+      persistSettings(Object.assign({}, baseSettings, syncSettings, {
         apiUrl: apiUrl,
         apiTokens: apiTokens,
         userid: userid
@@ -272,13 +422,13 @@ function saveSettings() {
       return
     }
 
-    persistSettings(baseSettings, 'invalidToken')
+    persistSettings(Object.assign({}, baseSettings, syncSettings), 'invalidToken')
   }).fail(function(xhr) {
     if (xhr && xhr.status === 404) {
       var payload = parseJwtPayload(apiTokens)
       var userid = payload && payload.sub ? parseInt(payload.sub, 10) : NaN
       if (!Number.isNaN(userid)) {
-        persistSettings(Object.assign({}, baseSettings, {
+        persistSettings(Object.assign({}, baseSettings, syncSettings, {
           apiUrl: apiUrl,
           apiTokens: apiTokens,
           userid: userid
@@ -287,7 +437,7 @@ function saveSettings() {
       }
     }
 
-    persistSettings(baseSettings, 'invalidToken')
+    persistSettings(Object.assign({}, baseSettings, syncSettings), 'invalidToken')
   })
 }
 

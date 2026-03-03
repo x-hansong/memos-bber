@@ -189,6 +189,136 @@
       </div>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-section-title" id="settingsS3SyncSection"></div>
+      <div class="memo-editor settings-stack">
+        <div class="setting-field">
+          <div class="setting-checkbox-row">
+            <label class="setting-label" for="s3SyncEnabled" id="s3SyncEnabledLabel"></label>
+            <input
+              id="s3SyncEnabled"
+              name="s3SyncEnabled"
+              type="checkbox"
+            />
+          </div>
+          <div class="setting-help" id="s3SyncEnabledHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="s3EndpointInput" id="s3EndpointLabel"></label>
+          <input
+            id="s3EndpointInput"
+            class="inputer"
+            name="s3EndpointInput"
+            type="text"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="s3EndpointHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="s3RegionInput" id="s3RegionLabel"></label>
+          <input
+            id="s3RegionInput"
+            class="inputer"
+            name="s3RegionInput"
+            type="text"
+            value=""
+            maxlength="120"
+          />
+          <div class="setting-help" id="s3RegionHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="s3BucketInput" id="s3BucketLabel"></label>
+          <input
+            id="s3BucketInput"
+            class="inputer"
+            name="s3BucketInput"
+            type="text"
+            value=""
+            maxlength="120"
+          />
+          <div class="setting-help" id="s3BucketHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="s3ObjectKeyInput" id="s3ObjectKeyLabel"></label>
+          <input
+            id="s3ObjectKeyInput"
+            class="inputer"
+            name="s3ObjectKeyInput"
+            type="text"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="s3ObjectKeyHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="s3AccessKeyIdInput" id="s3AccessKeyIdLabel"></label>
+          <input
+            id="s3AccessKeyIdInput"
+            class="inputer"
+            name="s3AccessKeyIdInput"
+            type="text"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="s3AccessKeyIdHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="s3SecretAccessKeyInput" id="s3SecretAccessKeyLabel"></label>
+          <input
+            id="s3SecretAccessKeyInput"
+            class="inputer"
+            name="s3SecretAccessKeyInput"
+            type="password"
+            value=""
+            maxlength="245"
+          />
+          <div class="setting-help" id="s3SecretAccessKeyHelp"></div>
+        </div>
+        <div class="setting-field">
+          <label class="setting-label" for="s3SyncIntervalHoursInput" id="s3SyncIntervalLabel"></label>
+          <input
+            id="s3SyncIntervalHoursInput"
+            class="inputer"
+            name="s3SyncIntervalHoursInput"
+            type="number"
+            value=""
+            min="1"
+            max="24"
+            step="1"
+          />
+          <div class="setting-help" id="s3SyncIntervalHelp"></div>
+        </div>
+        <div class="setting-field">
+          <div class="setting-checkbox-row">
+            <label class="setting-label" for="s3SyncBidirectional" id="s3SyncBidirectionalLabel"></label>
+            <input
+              id="s3SyncBidirectional"
+              name="s3SyncBidirectional"
+              type="checkbox"
+            />
+          </div>
+          <div class="setting-help" id="s3SyncBidirectionalHelp"></div>
+        </div>
+        <div class="setting-field">
+          <div class="setting-checkbox-row">
+            <label class="setting-label" for="s3ForcePathStyle" id="s3ForcePathStyleLabel"></label>
+            <input
+              id="s3ForcePathStyle"
+              name="s3ForcePathStyle"
+              type="checkbox"
+            />
+          </div>
+          <div class="setting-help" id="s3ForcePathStyleHelp"></div>
+        </div>
+        <div class="setting-field">
+          <div class="setting-label" id="s3SyncStatusLabel"></div>
+          <div class="setting-help" id="s3SyncStatusHelp"></div>
+          <div class="setting-help" id="s3SyncStatusValue"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="settings-actions">
       <span id="saveSettings" class="action-btn confirm-btn"></span>
     </div>

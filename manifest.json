@@ -35,7 +35,8 @@
       "tabs",
       "storage",
       "activeTab",
-      "contextMenus"
+      "contextMenus",
+      "alarms"
    ],
    "host_permissions": ["http://*/*", "https://*/*"],
    "commands": {
