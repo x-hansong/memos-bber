@@ -35,8 +35,101 @@
    "settingsTransferSection":{
       "message": "Import / Export"
    },
+   "settingsS3SyncSection":{
+      "message": "MinIO Config Sync"
+   },
    "settingsTransferHelp":{
       "message": "Export downloads the current settings as JSON; import replaces current settings with values from a JSON file."
+   },
+   "s3SyncEnabledLabel":{
+      "message": "Enable MinIO Sync"
+   },
+   "s3SyncEnabledHelp":{
+      "message": "When enabled, config is synced to MinIO and checked on a schedule. Long-lived keys are stored in the extension."
+   },
+   "s3EndpointLabel":{
+      "message": "MinIO Endpoint"
+   },
+   "s3EndpointHelp":{
+      "message": "MinIO server URL with protocol and optional port, for example https://minio.example.com:9000"
+   },
+   "s3RegionLabel":{
+      "message": "Signing Region"
+   },
+   "s3RegionHelp":{
+      "message": "Region used for S3 signing. Leave blank for most MinIO setups and the extension will use us-east-1"
+   },
+   "s3BucketLabel":{
+      "message": "Bucket Name"
+   },
+   "s3BucketHelp":{
+      "message": "Bucket used to store the config JSON"
+   },
+   "s3ObjectKeyLabel":{
+      "message": "Object Key"
+   },
+   "s3ObjectKeyHelp":{
+      "message": "For example: memos-bber/settings.json"
+   },
+   "s3AccessKeyIdLabel":{
+      "message": "Access Key"
+   },
+   "s3AccessKeyIdHelp":{
+      "message": "MinIO access key ID"
+   },
+   "s3SecretAccessKeyLabel":{
+      "message": "Secret Key"
+   },
+   "s3SecretAccessKeyHelp":{
+      "message": "MinIO secret access key. It is only stored in this browser extension."
+   },
+   "s3SyncIntervalLabel":{
+      "message": "Sync Interval (hours)"
+   },
+   "s3SyncIntervalHelp":{
+      "message": "1 to 24 hours. Saving settings triggers an immediate push, and the background worker also checks on this schedule."
+   },
+   "s3SyncBidirectionalLabel":{
+      "message": "Enable Bidirectional Sync"
+   },
+   "s3SyncBidirectionalHelp":{
+      "message": "When enabled, the extension compares local and remote timestamps and keeps the newer config. When disabled, only local changes are pushed."
+   },
+   "s3ForcePathStyleLabel":{
+      "message": "Use Path-Style URL"
+   },
+   "s3ForcePathStyleHelp":{
+      "message": "Recommended for MinIO. Uses endpoint/bucket/key instead of bucket.endpoint."
+   },
+   "s3SyncStatusLabel":{
+      "message": "Sync Status"
+   },
+   "s3SyncStatusHelp":{
+      "message": "Shows the latest automatic sync result. If it fails, check CORS, endpoint, bucket permissions, and system time."
+   },
+   "s3SyncStatusIdle":{
+      "message": "No sync has run yet"
+   },
+   "s3SyncStatusDisabled":{
+      "message": "Sync is disabled"
+   },
+   "s3SyncStatusSuccess":{
+      "message": "Latest sync succeeded"
+   },
+   "s3SyncStatusError":{
+      "message": "Latest sync failed"
+   },
+   "s3SyncStatusRunning":{
+      "message": "Sync is running"
+   },
+   "s3SyncStatusLastAt":{
+      "message": "Last time"
+   },
+   "s3SyncStatusReason":{
+      "message": "Result"
+   },
+   "s3SyncStatusDetail":{
+      "message": "Details"
    },
    "exportSettingsBtn":{
       "message": "Export Settings"
