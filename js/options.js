@@ -427,14 +427,14 @@ function saveSettings() {
     if (xhr && xhr.status === 404) {
       var payload = parseJwtPayload(apiTokens)
       var userid = payload && payload.sub ? parseInt(payload.sub, 10) : NaN
-      if (!Number.isNaN(userid)) {
-        persistSettings(Object.assign({}, baseSettings, syncSettings, {
-          apiUrl: apiUrl,
-          apiTokens: apiTokens,
-          userid: userid
-        }))
-        return
-      }
+      // Memos newer versions may not expose /api/v1/auth/status.
+      // In this case, keep the token and URL instead of marking them invalid.
+      persistSettings(Object.assign({}, baseSettings, syncSettings, {
+        apiUrl: apiUrl,
+        apiTokens: apiTokens,
+        userid: Number.isNaN(userid) ? '' : userid
+      }))
+      return
     }
 
     persistSettings(Object.assign({}, baseSettings, syncSettings), 'invalidToken')
