@@ -110,6 +110,22 @@ function buildMemoContent(content, pageUrl) {
     return content + '\n\n' + sourceLine
 }
 
+function normalizeMemoVisibility(value) {
+    if (value === 'PUBLIC' || value === 'PRIVATE' || value === 'PROTECTED') {
+      return value
+    }
+    return 'PUBLIC'
+}
+
+function parseResponseBody(response) {
+    if (!response) {
+      return Promise.resolve('')
+    }
+    return response.clone().text().catch(function() {
+      return ''
+    })
+}
+
 function normalizeTagValue(tag) {
     var rawTag = (tag || '').trim()
     if (!rawTag) {
@@ -846,7 +862,7 @@ function sendQuickMemo(payload, sendResponse) {
         autoTagModel: '',
         autoTagSystemPrompt: '',
         autoTagUserPrompt: '',
-        memo_lock: ''
+        memo_lock: 'PUBLIC'
       },
       function(items) {
         if (!items.apiUrl || !items.apiTokens) {
@@ -863,17 +879,26 @@ function sendQuickMemo(payload, sendResponse) {
             },
             body: JSON.stringify({
               content: buildQuickSaveContent(memoContent, pageUrl, items.quicksavetag, selectedTag),
-              visibility: items.memo_lock || ''
+              visibility: normalizeMemoVisibility(items.memo_lock),
+              state: 'NORMAL'
             })
           })
         }).then(function(response) {
           if (!response.ok) {
-            throw new Error('Request failed')
+            return parseResponseBody(response).then(function(bodyText) {
+              console.error('[memos-bber] quick save failed', {
+                status: response.status,
+                statusText: response.statusText,
+                responseText: bodyText
+              })
+              throw new Error('Request failed')
+            })
           }
           return response.json()
         }).then(function() {
           sendResponse({ ok: true })
-        }).catch(function() {
+        }).catch(function(error) {
+          console.error('[memos-bber] quick save request error', error && error.message ? error.message : error)
           sendResponse({ ok: false, reason: 'request-failed' })
         })
       }

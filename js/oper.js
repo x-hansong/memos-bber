@@ -16,7 +16,7 @@ function get_info(callback) {
       autoTagModel: '',
       autoTagSystemPrompt: '',
       autoTagUserPrompt: '',
-      memo_lock: '',
+      memo_lock: 'PUBLIC',
       open_action: '',
       open_content: '',
       userid: '',
@@ -228,7 +228,7 @@ function appendTagsToContent(content, tags) {
 
 function resolveVisibilityFromContent(content, info) {
   var nowTag = (content || '').match(/(#[^\s#]+)/)
-  var sendvisi = info.memo_lock || ''
+  var sendvisi = normalizeMemoVisibility(info.memo_lock)
   if (nowTag) {
     if (nowTag[1] == info.showtag) {
       sendvisi = 'PUBLIC'
@@ -237,6 +237,26 @@ function resolveVisibilityFromContent(content, info) {
     }
   }
   return sendvisi
+}
+
+function normalizeMemoVisibility(value) {
+  if (value === 'PUBLIC' || value === 'PRIVATE' || value === 'PROTECTED') {
+    return value
+  }
+  return 'PUBLIC'
+}
+
+function parseJqXhrError(err) {
+  var status = err && typeof err.status !== 'undefined' ? err.status : 'unknown'
+  var statusText = err && err.statusText ? err.statusText : 'unknown'
+  var responseText = err && typeof err.responseText === 'string' ? err.responseText : ''
+  var responseJSON = err && err.responseJSON ? err.responseJSON : null
+  return {
+    status: status,
+    statusText: statusText,
+    responseText: responseText,
+    responseJSON: responseJSON
+  }
 }
 
 function requestAutoTag(content, info, callback) {
@@ -444,7 +464,7 @@ function uploadImageNow(base64String, file) {
       var hideTag = info.hidetag
       var showTag = info.showtag
       var nowTag = $("textarea[name=text]").val().match(/(#[^\s#]+)/)
-      var sendvisi = info.memo_lock || ''
+      var sendvisi = normalizeMemoVisibility(info.memo_lock)
       if(nowTag){
         if(nowTag[1] == showTag){
           sendvisi = 'PUBLIC'
@@ -819,7 +839,8 @@ function sendText() {
           type:"POST",
           data:JSON.stringify({
             'content': finalContent,
-            'visibility': resolveVisibilityFromContent(finalContent, info)
+            'visibility': resolveVisibilityFromContent(finalContent, info),
+            'state': 'NORMAL'
           }),
           contentType:"application/json",
           dataType:"json",
@@ -854,6 +875,8 @@ function sendText() {
               }
             )
         },error:function(err){//清空open_action（打开时候进行的操作）,同时清空open_content
+                var errorDetail = parseJqXhrError(err)
+                console.error('[memos-bber] memo create failed', errorDetail)
                 chrome.storage.sync.set(
                   { open_action: '', open_content: '',resourceIdList:[] },
                   function () {
