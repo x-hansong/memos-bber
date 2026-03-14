@@ -5,6 +5,7 @@ var CONFIG_EXPORT_KEYS = [
   'hidetag',
   'showtag',
   'quicksavetag',
+  'quickSaveExcludedDomains',
   'autoTagEnabled',
   'autoTagCandidates',
   'autoTagApiUrl',
@@ -94,6 +95,8 @@ function setTexts() {
   document.getElementById('showInputHelp').textContent = chrome.i18n.getMessage('placeShowInput')
   document.getElementById('quickSaveTagLabel').textContent = chrome.i18n.getMessage('quickSaveTagLabel')
   document.getElementById('quickSaveTagHelp').textContent = chrome.i18n.getMessage('placeQuickSaveTag')
+  document.getElementById('quickSaveExcludedDomainsLabel').textContent = chrome.i18n.getMessage('quickSaveExcludedDomainsLabel')
+  document.getElementById('quickSaveExcludedDomainsHelp').textContent = chrome.i18n.getMessage('placeQuickSaveExcludedDomains')
   document.getElementById('autoTagEnabledLabel').textContent = chrome.i18n.getMessage('autoTagEnabledLabel')
   document.getElementById('autoTagEnabledHelp').textContent = chrome.i18n.getMessage('autoTagEnabledHelp')
   document.getElementById('autoTagCandidatesLabel').textContent = chrome.i18n.getMessage('autoTagCandidatesLabel')
@@ -141,6 +144,7 @@ function loadSettings() {
       hidetag: '',
       showtag: '',
       quicksavetag: '',
+      quickSaveExcludedDomains: '',
       autoTagEnabled: false,
       autoTagCandidates: '',
       autoTagApiUrl: '',
@@ -155,6 +159,7 @@ function loadSettings() {
       document.getElementById('hideInput').value = items.hidetag
       document.getElementById('showInput').value = items.showtag
       document.getElementById('quickSaveTagInput').value = items.quicksavetag
+      document.getElementById('quickSaveExcludedDomainsInput').value = items.quickSaveExcludedDomains
       document.getElementById('autoTagEnabled').checked = Boolean(items.autoTagEnabled)
       document.getElementById('autoTagCandidatesInput').value = items.autoTagCandidates
       document.getElementById('autoTagApiUrlInput').value = items.autoTagApiUrl
@@ -182,6 +187,7 @@ function getBaseSettings() {
     hidetag: document.getElementById('hideInput').value,
     showtag: document.getElementById('showInput').value,
     quicksavetag: document.getElementById('quickSaveTagInput').value,
+    quickSaveExcludedDomains: document.getElementById('quickSaveExcludedDomainsInput').value,
     autoTagEnabled: document.getElementById('autoTagEnabled').checked,
     autoTagCandidates: document.getElementById('autoTagCandidatesInput').value,
     autoTagApiUrl: document.getElementById('autoTagApiUrlInput').value,

@@ -152,6 +152,9 @@
    "quickSaveTagLabel":{
       "message": "一键保存默认标签"
    },
+   "quickSaveExcludedDomainsLabel":{
+      "message": "选区悬浮按钮排除域名"
+   },
    "placeApiUrl":{
       "message": "请填入 Memos 主页网址"
    },
@@ -181,6 +184,9 @@
    },
    "placeQuickSaveTag":{
       "message": "一键保存默认标签（如 tech 或 #tech）"
+   },
+   "placeQuickSaveExcludedDomains":{
+      "message": "这些域名不显示选区悬浮按钮，每行一条（如 example.com 或 *.example.com）"
    },
    "autoTagEnabledLabel":{
       "message": "保存前自动选标签"

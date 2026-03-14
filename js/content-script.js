@@ -1,8 +1,41 @@
 (function () {
+  var excludedDomainPatterns = []
   var buttonEl = null
   var toastEl = null
   var hideTimer = null
   var selectedPayload = null
+
+  function parseDomainPatterns(value) {
+    if (!window.MemosDomainPatterns) {
+      return []
+    }
+    return window.MemosDomainPatterns.parseDomainPatterns(value)
+  }
+
+  function isCurrentHostnameExcluded() {
+    if (!window.MemosDomainPatterns) {
+      return false
+    }
+    return window.MemosDomainPatterns.isHostnameExcluded(window.location.hostname, excludedDomainPatterns)
+  }
+
+  function applyExcludedDomains(value) {
+    excludedDomainPatterns = parseDomainPatterns(value)
+    if (isCurrentHostnameExcluded()) {
+      hideButton()
+    }
+  }
+
+  function loadExcludedDomains() {
+    chrome.storage.sync.get(
+      {
+        quickSaveExcludedDomains: ''
+      },
+      function (items) {
+        applyExcludedDomains(items.quickSaveExcludedDomains)
+      }
+    )
+  }
 
   function createButton() {
     if (buttonEl) {
@@ -256,6 +289,11 @@
   }
 
   function refreshSelectionButton() {
+    if (isCurrentHostnameExcluded()) {
+      hideButton()
+      return
+    }
+
     var payload = getSelectionPayload()
     if (!payload) {
       selectedPayload = null
@@ -279,4 +317,14 @@
 
   window.addEventListener('scroll', hideButton, true)
   window.addEventListener('resize', hideButton)
+
+  chrome.storage.onChanged.addListener(function (changes, areaName) {
+    if (areaName !== 'sync' || !changes.quickSaveExcludedDomains) {
+      return
+    }
+
+    applyExcludedDomains(changes.quickSaveExcludedDomains.newValue)
+  })
+
+  loadExcludedDomains()
 })()
