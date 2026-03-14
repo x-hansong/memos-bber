@@ -152,6 +152,9 @@
    "quickSaveTagLabel":{
       "message": "Default Quick Save Tag"
    },
+   "quickSaveExcludedDomainsLabel":{
+      "message": "Excluded Domains for Selection Button"
+   },
    "placeApiUrl":{
       "message": "Memos Self Home Url"
    },
@@ -181,6 +184,9 @@
    },
    "placeQuickSaveTag":{
       "message": "Quick save default tag (for example: tech or #tech)"
+   },
+   "placeQuickSaveExcludedDomains":{
+      "message": "Hide the selection button on these domains, one per line (for example: example.com or *.example.com)"
    },
    "autoTagEnabledLabel":{
       "message": "Auto pick one tag before save"
