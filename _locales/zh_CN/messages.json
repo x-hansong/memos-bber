@@ -105,7 +105,7 @@
       "message": "同步状态"
    },
    "s3SyncStatusHelp":{
-      "message": "这里显示最近一次自动同步结果。若失败，请检查 CORS、endpoint、bucket 权限和系统时间。"
+      "message": "这里显示最近一次同步结果。若失败，请检查 CORS、endpoint、bucket 权限和系统时间。"
    },
    "s3SyncStatusIdle":{
       "message": "尚未执行同步"
@@ -136,6 +136,15 @@
    },
    "importSettingsBtn":{
       "message": "导入配置"
+   },
+   "runS3SyncNowBtn":{
+      "message": "立即同步配置"
+   },
+   "runS3SyncNowDisabled":{
+      "message": "请先保存并启用 MinIO 同步，再执行立即同步。"
+   },
+   "runS3SyncNowFailed":{
+      "message": "立即同步触发失败，请稍后重试。"
    },
    "apiUrlLabel":{
       "message": "Memos 地址"

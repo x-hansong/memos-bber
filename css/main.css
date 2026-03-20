@@ -236,6 +236,10 @@ input.inputer{border-bottom: 1px solid #ccc;width:75%;}
 .secondary-btn{
     background-color: rgb(75,85,99);
 }
+.disabled-btn{
+    opacity: 0.55;
+    cursor: not-allowed;
+}
 .settings-actions{
     margin-top: 1rem;
     text-align: right;

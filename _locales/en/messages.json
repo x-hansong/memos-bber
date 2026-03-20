@@ -105,7 +105,7 @@
       "message": "Sync Status"
    },
    "s3SyncStatusHelp":{
-      "message": "Shows the latest automatic sync result. If it fails, check CORS, endpoint, bucket permissions, and system time."
+      "message": "Shows the latest sync result. If it fails, check CORS, endpoint, bucket permissions, and system time."
    },
    "s3SyncStatusIdle":{
       "message": "No sync has run yet"
@@ -136,6 +136,15 @@
    },
    "importSettingsBtn":{
       "message": "Import Settings"
+   },
+   "runS3SyncNowBtn":{
+      "message": "Sync Now"
+   },
+   "runS3SyncNowDisabled":{
+      "message": "Save and enable MinIO sync before running a manual sync."
+   },
+   "runS3SyncNowFailed":{
+      "message": "Could not start the sync right now. Please try again."
    },
    "apiUrlLabel":{
       "message": "Memos URL"

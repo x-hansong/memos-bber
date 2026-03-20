@@ -1,32 +1,4 @@
-var CONFIG_EXPORT_KEYS = [
-  'apiUrl',
-  'apiTokens',
-  'userid',
-  'hidetag',
-  'showtag',
-  'quicksavetag',
-  'quickSaveExcludedDomains',
-  'autoTagEnabled',
-  'autoTagCandidates',
-  'autoTagApiUrl',
-  'autoTagApiKey',
-  'autoTagModel',
-  'autoTagSystemPrompt',
-  'autoTagUserPrompt'
-]
-
-var S3_SYNC_DEFAULTS = {
-  s3SyncEnabled: false,
-  s3Endpoint: '',
-  s3Region: '',
-  s3Bucket: '',
-  s3ObjectKey: '',
-  s3AccessKeyId: '',
-  s3SecretAccessKey: '',
-  s3SyncIntervalHours: 6,
-  s3SyncBidirectional: true,
-  s3ForcePathStyle: true
-}
+var savedS3SyncEnabled = false
 
 function parseJwtPayload(token) {
   try {
@@ -84,6 +56,7 @@ function setTexts() {
   document.getElementById('saveSettings').textContent = chrome.i18n.getMessage('saveBtn')
   document.getElementById('exportSettings').textContent = chrome.i18n.getMessage('exportSettingsBtn')
   document.getElementById('importSettings').textContent = chrome.i18n.getMessage('importSettingsBtn')
+  document.getElementById('runS3SyncNow').textContent = chrome.i18n.getMessage('runS3SyncNowBtn')
 
   document.getElementById('apiUrlLabel').textContent = chrome.i18n.getMessage('apiUrlLabel')
   document.getElementById('apiUrlHelp').textContent = chrome.i18n.getMessage('placeApiUrl')
@@ -138,21 +111,7 @@ function setTexts() {
 
 function loadSettings() {
   chrome.storage.sync.get(
-    Object.assign({
-      apiUrl: '',
-      apiTokens: '',
-      hidetag: '',
-      showtag: '',
-      quicksavetag: '',
-      quickSaveExcludedDomains: '',
-      autoTagEnabled: false,
-      autoTagCandidates: '',
-      autoTagApiUrl: '',
-      autoTagApiKey: '',
-      autoTagModel: '',
-      autoTagSystemPrompt: '',
-      autoTagUserPrompt: ''
-    }, S3_SYNC_DEFAULTS),
+    PERSISTED_SETTINGS_DEFAULTS,
     function(items) {
       document.getElementById('apiUrl').value = items.apiUrl
       document.getElementById('apiTokens').value = items.apiTokens
@@ -177,7 +136,9 @@ function loadSettings() {
       document.getElementById('s3SyncIntervalHoursInput').value = String(items.s3SyncIntervalHours || S3_SYNC_DEFAULTS.s3SyncIntervalHours)
       document.getElementById('s3SyncBidirectional').checked = Boolean(items.s3SyncBidirectional)
       document.getElementById('s3ForcePathStyle').checked = Boolean(items.s3ForcePathStyle)
-      loadSyncStatus(Boolean(items.s3SyncEnabled))
+      savedS3SyncEnabled = Boolean(items.s3SyncEnabled)
+      updateRunSyncButtonState()
+      loadSyncStatus()
     }
   )
 }
@@ -218,14 +179,22 @@ function getSyncSettings() {
   }
 }
 
-function notifySyncSettingsSaved() {
+function updateRunSyncButtonState() {
+  document.getElementById('runS3SyncNow').classList.toggle('disabled-btn', !savedS3SyncEnabled)
+}
+
+function notifySyncSettingsSaved(nextSavedSyncEnabled) {
   chrome.storage.local.set({
     configUpdatedAt: new Date().toISOString()
   }, function() {
     chrome.runtime.sendMessage({
       type: 's3-sync-settings-saved'
     }, function() {
-      loadSyncStatus(document.getElementById('s3SyncEnabled').checked)
+      if (typeof nextSavedSyncEnabled === 'boolean') {
+        savedS3SyncEnabled = nextSavedSyncEnabled
+      }
+      updateRunSyncButtonState()
+      loadSyncStatus()
     })
   })
 }
@@ -235,16 +204,16 @@ function persistSettings(settings, messageKey) {
     $.message({
       message: chrome.i18n.getMessage(messageKey || 'saveSuccess')
     })
-    notifySyncSettingsSaved()
+    notifySyncSettingsSaved(Boolean(settings.s3SyncEnabled))
   })
 }
 
 function exportSettings() {
-  chrome.storage.sync.get(CONFIG_EXPORT_KEYS, function(items) {
+  chrome.storage.sync.get(PERSISTED_SETTINGS_DEFAULTS, function(items) {
     var payload = {
       version: 1,
       exportedAt: new Date().toISOString(),
-      settings: items
+      settings: normalizePersistedSettings(items)
     }
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     var url = URL.createObjectURL(blob)
@@ -265,15 +234,17 @@ function normalizeImportedSettings(data) {
     return null
   }
 
-  var normalized = {}
-  for (var i = 0; i < CONFIG_EXPORT_KEYS.length; i++) {
-    var key = CONFIG_EXPORT_KEYS[i]
-    if (Object.prototype.hasOwnProperty.call(source, key)) {
-      normalized[key] = source[key]
+  var normalized = normalizePersistedSettings(source)
+  var hasPersistedKey = false
+  var keys = getPersistedSettingsKeys()
+  for (var i = 0; i < keys.length; i++) {
+    if (Object.prototype.hasOwnProperty.call(source, keys[i])) {
+      hasPersistedKey = true
+      break
     }
   }
 
-  if (Object.keys(normalized).length === 0) {
+  if (!hasPersistedKey) {
     return null
   }
 
@@ -298,7 +269,7 @@ function importSettingsFile(file) {
         $.message({
           message: chrome.i18n.getMessage('importSuccess')
         })
-        notifySyncSettingsSaved()
+        notifySyncSettingsSaved(Boolean(importedSettings.s3SyncEnabled))
       })
     } catch (error) {
       $.message({
@@ -360,7 +331,7 @@ function buildSyncStatusLines(state, enabled) {
   return lines
 }
 
-function loadSyncStatus(enabled) {
+function loadSyncStatus() {
   chrome.storage.local.get({
     s3SyncState: null
   }, function(items) {
@@ -373,13 +344,48 @@ function loadSyncStatus(enabled) {
         .replace(/'/g, '&#39;')
     }
 
-    document.getElementById('s3SyncStatusValue').innerHTML = buildSyncStatusLines(items.s3SyncState, enabled)
+    document.getElementById('s3SyncStatusValue').innerHTML = buildSyncStatusLines(items.s3SyncState, savedS3SyncEnabled)
       .map(function(line) {
         return '<div>' + escapeHtml(line) + '</div>'
       })
       .join('')
   })
 }
+
+function runS3SyncNow() {
+  if (!savedS3SyncEnabled) {
+    $.message({
+      message: chrome.i18n.getMessage('runS3SyncNowDisabled')
+    })
+    return
+  }
+
+  chrome.runtime.sendMessage({
+    type: 's3-sync-run-now'
+  }, function(response) {
+    if (chrome.runtime.lastError) {
+      $.message({
+        message: chrome.i18n.getMessage('runS3SyncNowFailed')
+      })
+      return
+    }
+
+    if (!response || !response.ok) {
+      $.message({
+        message: chrome.i18n.getMessage('runS3SyncNowFailed')
+      })
+      return
+    }
+
+    loadSyncStatus()
+  })
+}
+
+chrome.storage.onChanged.addListener(function(changes, areaName) {
+  if (areaName === 'local' && changes.s3SyncState) {
+    loadSyncStatus()
+  }
+})
 
 function saveSettings() {
   var apiUrl = document.getElementById('apiUrl').value.trim()
@@ -451,6 +457,7 @@ setTexts()
 loadSettings()
 document.getElementById('saveSettings').addEventListener('click', saveSettings)
 document.getElementById('exportSettings').addEventListener('click', exportSettings)
+document.getElementById('runS3SyncNow').addEventListener('click', runS3SyncNow)
 document.getElementById('importSettings').addEventListener('click', function() {
   document.getElementById('importSettingsFile').click()
 })
