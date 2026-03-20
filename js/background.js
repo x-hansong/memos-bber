@@ -1,47 +1,4 @@
-var CONFIG_EXPORT_KEYS = [
-    'apiUrl',
-    'apiTokens',
-    'userid',
-    'hidetag',
-    'showtag',
-    'quicksavetag',
-    'autoTagEnabled',
-    'autoTagCandidates',
-    'autoTagApiUrl',
-    'autoTagApiKey',
-    'autoTagModel',
-    'autoTagSystemPrompt',
-    'autoTagUserPrompt'
-]
-
-var EXPORTABLE_SETTINGS_DEFAULTS = {
-    apiUrl: '',
-    apiTokens: '',
-    userid: '',
-    hidetag: '',
-    showtag: '',
-    quicksavetag: '',
-    autoTagEnabled: false,
-    autoTagCandidates: '',
-    autoTagApiUrl: '',
-    autoTagApiKey: '',
-    autoTagModel: '',
-    autoTagSystemPrompt: '',
-    autoTagUserPrompt: ''
-}
-
-var S3_SYNC_DEFAULTS = {
-    s3SyncEnabled: false,
-    s3Endpoint: '',
-    s3Region: '',
-    s3Bucket: '',
-    s3ObjectKey: '',
-    s3AccessKeyId: '',
-    s3SecretAccessKey: '',
-    s3SyncIntervalHours: 6,
-    s3SyncBidirectional: true,
-    s3ForcePathStyle: true
-}
+importScripts('settings-schema.js')
 
 var SYNC_ALARM_NAME = 'memos-bber-s3-sync'
 var syncCyclePromise = null
@@ -123,6 +80,21 @@ function parseResponseBody(response) {
     }
     return response.clone().text().catch(function() {
       return ''
+    })
+}
+
+function buildRemoteResponseError(response) {
+    if (!response) {
+      return Promise.resolve(new Error('remote-unknown'))
+    }
+
+    return parseResponseBody(response).then(function(bodyText) {
+      var detail = 'remote-' + response.status
+      var normalizedBody = (bodyText || '').trim().replace(/\s+/g, ' ')
+      if (normalizedBody) {
+        detail += ': ' + normalizedBody
+      }
+      return new Error(detail)
     })
 }
 
@@ -362,16 +334,7 @@ function alarmsClear(name) {
 }
 
 function normalizeExportableSettings(source) {
-    var normalized = {}
-    for (var i = 0; i < CONFIG_EXPORT_KEYS.length; i++) {
-      var key = CONFIG_EXPORT_KEYS[i]
-      if (source && Object.prototype.hasOwnProperty.call(source, key)) {
-        normalized[key] = source[key]
-      } else {
-        normalized[key] = EXPORTABLE_SETTINGS_DEFAULTS[key]
-      }
-    }
-    return normalized
+    return normalizePersistedSettings(source)
 }
 
 function stableSortValue(value) {
@@ -585,8 +548,9 @@ function normalizeRemotePayload(data) {
 
     var source = data.settings && typeof data.settings === 'object' ? data.settings : data
     var hasAny = false
-    for (var i = 0; i < CONFIG_EXPORT_KEYS.length; i++) {
-      if (Object.prototype.hasOwnProperty.call(source, CONFIG_EXPORT_KEYS[i])) {
+    var persistedKeys = getPersistedSettingsKeys()
+    for (var i = 0; i < persistedKeys.length; i++) {
+      if (Object.prototype.hasOwnProperty.call(source, persistedKeys[i])) {
         hasAny = true
         break
       }
@@ -609,7 +573,7 @@ function normalizeRemotePayload(data) {
 }
 
 function getExportableSettings() {
-    return storageSyncGet(EXPORTABLE_SETTINGS_DEFAULTS).then(normalizeExportableSettings)
+    return storageSyncGet(PERSISTED_SETTINGS_DEFAULTS).then(normalizeExportableSettings)
 }
 
 function getSyncConfig() {
@@ -695,7 +659,9 @@ function fetchRemoteConfig(config) {
         return null
       }
       if (!response.ok) {
-        throw new Error('remote-' + response.status)
+        return buildRemoteResponseError(response).then(function(error) {
+          throw error
+        })
       }
       return response.text()
     }).then(function(text) {
@@ -726,7 +692,8 @@ function pushRemoteConfig(config, payloadBundle) {
     var url = buildObjectUrl(config)
 
     return sha256HexFromText(payloadBundle.body).then(function(bodyHash) {
-      return signMinioRequest('PUT', url, bodyHash, config, payloadBundle.payload.updatedAt).then(function(headers) {
+      // Use request time for SigV4 so a stale configUpdatedAt cannot keep uploads failing.
+      return signMinioRequest('PUT', url, bodyHash, config, new Date().toISOString()).then(function(headers) {
         return fetch(url.toString(), {
           method: 'PUT',
           headers: headers,
@@ -735,7 +702,9 @@ function pushRemoteConfig(config, payloadBundle) {
       })
     }).then(function(response) {
       if (!response.ok) {
-        throw new Error('remote-' + response.status)
+        return buildRemoteResponseError(response).then(function(error) {
+          throw error
+        })
       }
       return payloadBundle.payload
     })
@@ -920,6 +889,20 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         .then(function() {
           return runSyncCycle('save')
         })
+        .then(function() {
+          sendResponse({ ok: true })
+        })
+        .catch(function(error) {
+          sendResponse({
+            ok: false,
+            reason: error && error.message ? error.message : 'unknown-error'
+          })
+        })
+      return true
+    }
+
+    if (message.type === 's3-sync-run-now') {
+      runSyncCycle('manual')
         .then(function() {
           sendResponse({ ok: true })
         })
