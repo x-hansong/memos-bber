@@ -1,4 +1,15 @@
 var savedS3SyncEnabled = false
+var HOVER_TAG_PICKER_MIN_SECONDS = 1
+var HOVER_TAG_PICKER_MAX_SECONDS = 30
+var HOVER_TAG_PICKER_DEFAULT_SECONDS = 10
+
+function normalizeHoverTagPickerDelaySeconds(value) {
+  var parsed = parseInt(value, 10)
+  if (Number.isNaN(parsed)) {
+    parsed = HOVER_TAG_PICKER_DEFAULT_SECONDS
+  }
+  return Math.min(HOVER_TAG_PICKER_MAX_SECONDS, Math.max(HOVER_TAG_PICKER_MIN_SECONDS, parsed))
+}
 
 function parseJwtPayload(token) {
   try {
@@ -70,6 +81,10 @@ function setTexts() {
   document.getElementById('quickSaveTagHelp').textContent = chrome.i18n.getMessage('placeQuickSaveTag')
   document.getElementById('quickSaveExcludedDomainsLabel').textContent = chrome.i18n.getMessage('quickSaveExcludedDomainsLabel')
   document.getElementById('quickSaveExcludedDomainsHelp').textContent = chrome.i18n.getMessage('placeQuickSaveExcludedDomains')
+  document.getElementById('hoverTagPickerEnabledLabel').textContent = chrome.i18n.getMessage('hoverTagPickerEnabledLabel')
+  document.getElementById('hoverTagPickerEnabledHelp').textContent = chrome.i18n.getMessage('hoverTagPickerEnabledHelp')
+  document.getElementById('hoverTagPickerDelaySecondsLabel').textContent = chrome.i18n.getMessage('hoverTagPickerDelaySecondsLabel')
+  document.getElementById('hoverTagPickerDelaySecondsHelp').textContent = chrome.i18n.getMessage('hoverTagPickerDelaySecondsHelp')
   document.getElementById('autoTagEnabledLabel').textContent = chrome.i18n.getMessage('autoTagEnabledLabel')
   document.getElementById('autoTagEnabledHelp').textContent = chrome.i18n.getMessage('autoTagEnabledHelp')
   document.getElementById('autoTagCandidatesLabel').textContent = chrome.i18n.getMessage('autoTagCandidatesLabel')
@@ -119,6 +134,10 @@ function loadSettings() {
       document.getElementById('showInput').value = items.showtag
       document.getElementById('quickSaveTagInput').value = items.quicksavetag
       document.getElementById('quickSaveExcludedDomainsInput').value = items.quickSaveExcludedDomains
+      document.getElementById('hoverTagPickerEnabled').checked = Boolean(items.hoverTagPickerEnabled)
+      document.getElementById('hoverTagPickerDelaySecondsInput').value = String(
+        normalizeHoverTagPickerDelaySeconds(items.hoverTagPickerDelaySeconds)
+      )
       document.getElementById('autoTagEnabled').checked = Boolean(items.autoTagEnabled)
       document.getElementById('autoTagCandidatesInput').value = items.autoTagCandidates
       document.getElementById('autoTagApiUrlInput').value = items.autoTagApiUrl
@@ -149,6 +168,8 @@ function getBaseSettings() {
     showtag: document.getElementById('showInput').value,
     quicksavetag: document.getElementById('quickSaveTagInput').value,
     quickSaveExcludedDomains: document.getElementById('quickSaveExcludedDomainsInput').value,
+    hoverTagPickerEnabled: document.getElementById('hoverTagPickerEnabled').checked,
+    hoverTagPickerDelaySeconds: normalizeHoverTagPickerDelaySeconds(document.getElementById('hoverTagPickerDelaySecondsInput').value),
     autoTagEnabled: document.getElementById('autoTagEnabled').checked,
     autoTagCandidates: document.getElementById('autoTagCandidatesInput').value,
     autoTagApiUrl: document.getElementById('autoTagApiUrlInput').value,

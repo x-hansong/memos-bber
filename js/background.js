@@ -1,4 +1,4 @@
-importScripts('settings-schema.js')
+importScripts('settings-schema.js', 'quick-save-tags.js')
 
 var SYNC_ALARM_NAME = 'memos-bber-s3-sync'
 var syncCyclePromise = null
@@ -56,6 +56,13 @@ function joinApiUrl(baseUrl, path) {
     return baseUrl.replace(/\/?$/, '/') + path.replace(/^\//, '')
 }
 
+var quickSaveTags = self.MemosQuickSaveTags || {}
+var normalizeTagValue = quickSaveTags.normalizeTagValue
+var parseTagValues = quickSaveTags.parseTagValues
+var findMatchedCandidateTag = quickSaveTags.findMatchedCandidateTag
+var findExistingCandidateTag = quickSaveTags.findExistingCandidateTag
+var buildQuickSaveTagLine = quickSaveTags.buildQuickSaveTagLine
+
 function buildMemoContent(content, pageUrl) {
     var sourceLine = pageUrl || ''
     if (!sourceLine) {
@@ -96,28 +103,6 @@ function buildRemoteResponseError(response) {
       }
       return new Error(detail)
     })
-}
-
-function normalizeTagValue(tag) {
-    var rawTag = (tag || '').trim()
-    if (!rawTag) {
-      return ''
-    }
-    return rawTag.charAt(0) === '#' ? rawTag : '#' + rawTag
-}
-
-function parseTagValues(tagText) {
-    var seen = {}
-    return (tagText || '')
-      .split(/[\s,，]+/)
-      .map(normalizeTagValue)
-      .filter(function(tag) {
-        if (!tag || seen[tag]) {
-          return false
-        }
-        seen[tag] = true
-        return true
-      })
 }
 
 function getDefaultAutoTagSystemPrompt() {
@@ -166,42 +151,6 @@ function resolveAutoTagApiUrl(apiUrl) {
       return rawUrl
     }
     return rawUrl.replace(/\/?$/, '/') + 'chat/completions'
-}
-
-function findMatchedCandidateTag(rawText, candidateTags) {
-    var text = (rawText || '').trim()
-    var directTag = normalizeTagValue(text.replace(/^["'`\s]+|["'`\s]+$/g, ''))
-    if (candidateTags.indexOf(directTag) >= 0) {
-      return directTag
-    }
-
-    var parts = text.split(/[\s,，\n]+/)
-    for (var i = 0; i < parts.length; i++) {
-      var normalized = normalizeTagValue(parts[i].replace(/^["'`]+|["'`]+$/g, ''))
-      if (candidateTags.indexOf(normalized) >= 0) {
-        return normalized
-      }
-    }
-
-    for (var j = 0; j < candidateTags.length; j++) {
-      var candidate = candidateTags[j]
-      var plainCandidate = candidate.slice(1)
-      if (text.indexOf(candidate) >= 0 || text.indexOf(plainCandidate) >= 0) {
-        return candidate
-      }
-    }
-
-    return ''
-}
-
-function findExistingCandidateTag(content, candidateTags) {
-    var matches = (content || '').match(/(#[^\s#]+)/g) || []
-    for (var i = 0; i < matches.length; i++) {
-      if (candidateTags.indexOf(matches[i]) >= 0) {
-        return matches[i]
-      }
-    }
-    return ''
 }
 
 function requestAutoTag(content, settings) {
@@ -279,10 +228,10 @@ function requestAutoTag(content, settings) {
     })
 }
 
-function buildQuickSaveContent(content, pageUrl, quickSaveTag, autoTag) {
+function buildQuickSaveContent(content, pageUrl, quickSaveTag, manualTag, autoTag) {
     var sections = []
     var body = buildMemoContent(content, pageUrl)
-    var tagLine = parseTagValues([autoTag, quickSaveTag].filter(Boolean).join(' ')).join(' ')
+    var tagLine = buildQuickSaveTagLine(quickSaveTag, manualTag, autoTag)
 
     if (body) {
       sections.push(body)
@@ -813,6 +762,7 @@ function initializeSyncEngine() {
 function sendQuickMemo(payload, sendResponse) {
     var memoContent = ((payload && payload.content) || '').trim()
     var pageUrl = (payload && payload.pageUrl) || ''
+    var manualTag = normalizeTagValue((payload && payload.selectedTag) || '')
 
     if (!memoContent && !pageUrl) {
       sendResponse({ ok: false, reason: 'empty-content' })
@@ -839,7 +789,9 @@ function sendQuickMemo(payload, sendResponse) {
           return
         }
 
-        requestAutoTag(memoContent || pageUrl, items).then(function(selectedTag) {
+        var autoTagPromise = manualTag ? Promise.resolve('') : requestAutoTag(memoContent || pageUrl, items)
+
+        autoTagPromise.then(function(selectedTag) {
           return fetch(joinApiUrl(items.apiUrl, 'api/v1/memos'), {
             method: 'POST',
             headers: {
@@ -847,7 +799,7 @@ function sendQuickMemo(payload, sendResponse) {
               'Authorization': 'Bearer ' + items.apiTokens
             },
             body: JSON.stringify({
-              content: buildQuickSaveContent(memoContent, pageUrl, items.quicksavetag, selectedTag),
+              content: buildQuickSaveContent(memoContent, pageUrl, items.quicksavetag, manualTag, selectedTag),
               visibility: normalizeMemoVisibility(items.memo_lock),
               state: 'NORMAL'
             })
