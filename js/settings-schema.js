@@ -6,6 +6,8 @@ var PERSISTED_SETTINGS_DEFAULTS = {
   showtag: '',
   quicksavetag: '',
   quickSaveExcludedDomains: '',
+  hoverTagPickerEnabled: false,
+  hoverTagPickerDelaySeconds: 10,
   autoTagEnabled: false,
   autoTagCandidates: '',
   autoTagApiUrl: '',

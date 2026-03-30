@@ -197,6 +197,27 @@
    "placeQuickSaveExcludedDomains":{
       "message": "Hide the selection button on these domains, one per line (for example: example.com or *.example.com)"
    },
+   "hoverTagPickerEnabledLabel":{
+      "message": "Hover to pick a tag before save"
+   },
+   "hoverTagPickerEnabledHelp":{
+      "message": "When enabled, hovering on the selection button for the configured time expands your candidate tags so you can pick exactly one before saving."
+   },
+   "hoverTagPickerDelaySecondsLabel":{
+      "message": "Hover Delay in Seconds"
+   },
+   "hoverTagPickerDelaySecondsHelp":{
+      "message": "Enter 1-30 seconds. Default is 10 seconds. Turning the toggle off restores the normal one-click save flow."
+   },
+   "hoverTagPickerSelectPrompt":{
+      "message": "Pick 1 tag first"
+   },
+   "hoverTagPickerSaveBtn":{
+      "message": "Save to Memos with Tag"
+   },
+   "hoverTagPickerTagRequired":{
+      "message": "Pick exactly one tag before saving"
+   },
    "autoTagEnabledLabel":{
       "message": "Auto pick one tag before save"
    },
