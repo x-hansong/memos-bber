@@ -1,8 +1,15 @@
 (function () {
   var quickSaveTags = window.MemosQuickSaveTags || {}
   var hoverTagPickerSettings = window.MemosHoverTagPickerSettings || {}
+  var selectionButtonPosition = window.MemosSelectionButtonPosition || {}
   var parseTagValues = quickSaveTags.parseTagValues || function() {
     return []
+  }
+  var computeSelectionButtonPosition = selectionButtonPosition.computePosition || function(anchorRect) {
+    return {
+      left: anchorRect && typeof anchorRect.right === 'number' ? anchorRect.right : 20,
+      top: anchorRect && typeof anchorRect.bottom === 'number' ? anchorRect.bottom + 8 : 20
+    }
   }
   var normalizeHoverSettings = hoverTagPickerSettings.normalizeSettings || function(rawSettings) {
     return {
@@ -26,6 +33,8 @@
   var isExpanded = false
   var hoverCountdownTimer = null
   var hoverCountdownStartedAt = 0
+  var VIEWPORT_EDGE_PADDING = 20
+  var ANCHOR_OFFSET = 8
 
   function parseDomainPatterns(value) {
     if (!window.MemosDomainPatterns) {
@@ -136,6 +145,8 @@
     containerEl.style.flexDirection = 'column'
     containerEl.style.alignItems = 'flex-end'
     containerEl.style.gap = '8px'
+    containerEl.style.maxWidth = 'calc(100vw - 40px)'
+    containerEl.style.boxSizing = 'border-box'
 
     buttonEl = document.createElement('button')
     buttonEl.type = 'button'
@@ -148,6 +159,8 @@
     buttonEl.style.fontFamily = 'system-ui, sans-serif'
     buttonEl.style.lineHeight = '1.2'
     buttonEl.style.cursor = 'pointer'
+    buttonEl.style.maxWidth = '100%'
+    buttonEl.style.boxSizing = 'border-box'
     buttonEl.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.2)'
     buttonEl.style.transition = 'background 120ms ease, opacity 120ms ease'
 
@@ -190,6 +203,7 @@
     tagListEl.style.justifyContent = 'flex-end'
     tagListEl.style.gap = '6px'
     tagListEl.style.maxWidth = '280px'
+    tagListEl.style.boxSizing = 'border-box'
     tagListEl.style.padding = '10px'
     tagListEl.style.borderRadius = '14px'
     tagListEl.style.background = 'rgba(17, 24, 39, 0.94)'
@@ -357,6 +371,52 @@
     return hoverTagPickerEnabled && hoverTagCandidateTags.length > 0
   }
 
+  function getViewportMaxWidth() {
+    return Math.max(0, window.innerWidth - VIEWPORT_EDGE_PADDING * 2)
+  }
+
+  function applyContainerWidthConstraints() {
+    var maxWidth = getViewportMaxWidth()
+
+    if (containerEl) {
+      containerEl.style.maxWidth = maxWidth + 'px'
+    }
+
+    if (tagListEl) {
+      tagListEl.style.maxWidth = maxWidth + 'px'
+    }
+  }
+
+  function positionContainer() {
+    if (!containerEl || !selectedPayload || !selectedPayload.rect) {
+      return
+    }
+
+    applyContainerWidthConstraints()
+
+    containerEl.style.left = '0px'
+    containerEl.style.top = '0px'
+
+    var position = computeSelectionButtonPosition(
+      selectedPayload.rect,
+      {
+        width: containerEl.offsetWidth,
+        height: containerEl.offsetHeight
+      },
+      {
+        width: window.innerWidth,
+        height: window.innerHeight
+      },
+      {
+        edgePadding: VIEWPORT_EDGE_PADDING,
+        anchorOffset: ANCHOR_OFFSET
+      }
+    )
+
+    containerEl.style.left = position.left + 'px'
+    containerEl.style.top = position.top + 'px'
+  }
+
   function stopHoverCountdown() {
     if (!hoverCountdownTimer) {
       return
@@ -479,6 +539,7 @@
     renderTagOptions()
     tagListEl.style.display = 'flex'
     updateExpandedButtonState()
+    positionContainer()
   }
 
   function startHoverCountdown() {
@@ -521,6 +582,7 @@
     }
 
     containerEl.style.display = 'none'
+    containerEl.style.visibility = 'hidden'
   }
 
   function showButton(payload) {
@@ -529,25 +591,11 @@
     stopHoverCountdown()
     collapseExpandedState()
 
-    var top = payload.rect.bottom + 8
-    var left = payload.rect.right
-    var maxLeft = window.innerWidth - 20
-
-    if (left > maxLeft) {
-      left = maxLeft
-    }
-    if (left < 20) {
-      left = 20
-    }
-
-    if (top > window.innerHeight - 20) {
-      top = Math.max(20, payload.rect.top - 40)
-    }
-
-    containerEl.style.left = left + 'px'
-    containerEl.style.top = top + 'px'
     containerEl.style.display = 'flex'
+    containerEl.style.visibility = 'hidden'
     setBaseButtonState()
+    positionContainer()
+    containerEl.style.visibility = 'visible'
   }
 
   function refreshSelectionButton() {
